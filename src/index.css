@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Deep space tactical palette ── */
+  --color-void: #060a11;
+  --color-abyss: #0a0e17;
+  --color-deep: #0f1520;
+  --color-slate: #1a2233;
+  --color-steel: #2a3548;
+  --color-ash: #8899aa;
+  --color-fog: #b0bec5;
+  --color-light: #e0e8f0;
+
+  /* Primary: electric cyan — tactical readout accent */
+  --color-cyan: #00e5ff;
+  --color-cyan-dim: #006680;
+  --color-cyan-glow: #00e5ff33;
+
+  /* Secondary: amber — warning/highlight */
+  --color-amber: #ff9100;
+  --color-amber-dim: #664400;
+  --color-amber-glow: #ff910033;
+
+  /* Semantic */
+  --color-good: #00c853;
+  --color-good-dim: #00c85322;
+  --color-bad: #ff1744;
+  --color-bad-dim: #ff174422;
+  --color-ban: #ff174488;
+
+  /* Fonts */
+  --font-display: "Chakra Petch", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-fog);
+  background: var(--color-void);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 20% 0%, #0d1f3510 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, #0a1a2f10 0%, transparent 50%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 49px,
+      #ffffff03 49px,
+      #ffffff03 50px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 49px,
+      #ffffff03 49px,
+      #ffffff03 50px
+    ),
+    var(--color-void);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-abyss);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-steel);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ash);
+}
