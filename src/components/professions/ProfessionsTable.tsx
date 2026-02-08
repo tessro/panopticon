@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { CouncilorType, Mission, Trait, AffinityStatus } from "@/types/game";
 import { STAT_ABBREV } from "@/types/game";
 import {
@@ -82,6 +82,8 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
     return groups;
   }, [councilorTypes]);
 
+  const [hoveredMission, setHoveredMission] = useState<string | null>(null);
+
   const govTrait = traits.find((t) => t.name === "Government");
   const crimTrait = traits.find((t) => t.name === "Criminal");
 
@@ -141,9 +143,11 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
                 key={m.name}
                 className={`bg-[var(--color-deep)] p-0 ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""}`}
                 style={{ width: 28, minWidth: 28, maxWidth: 28 }}
+                onMouseEnter={() => setHoveredMission(m.name)}
+                onMouseLeave={() => setHoveredMission(null)}
               >
                 <div
-                  className="flex items-end justify-start overflow-hidden"
+                  className="flex items-end justify-start"
                   style={{ height: 80 }}
                 >
                   <span
@@ -177,6 +181,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
               govTrait={govTrait}
               crimTrait={crimTrait}
               totalCols={fixedCols + missionCols}
+              hoveredMission={hoveredMission}
             />
           );
         })}
@@ -193,6 +198,7 @@ function ProfessionGroup({
   govTrait,
   crimTrait,
   totalCols,
+  hoveredMission,
 }: {
   statGroup: string;
   professions: CouncilorType[];
@@ -201,6 +207,7 @@ function ProfessionGroup({
   govTrait: Trait | undefined;
   crimTrait: Trait | undefined;
   totalCols: number;
+  hoveredMission: string | null;
 }) {
   const abbrev = STAT_ABBREV[statGroup as keyof typeof STAT_ABBREV] ?? statGroup;
 
@@ -223,6 +230,7 @@ function ProfessionGroup({
           selectedFaction={selectedFaction}
           govTrait={govTrait}
           crimTrait={crimTrait}
+          hoveredMission={hoveredMission}
         />
       ))}
     </>
@@ -235,12 +243,14 @@ function ProfessionRow({
   selectedFaction,
   govTrait,
   crimTrait,
+  hoveredMission,
 }: {
   ct: CouncilorType;
   orderedMissions: Mission[];
   selectedFaction: string | null;
   govTrait: Trait | undefined;
   crimTrait: Trait | undefined;
+  hoveredMission: string | null;
 }) {
   const affinity = getAffinityStatus(ct, selectedFaction);
   const cost = getHireCost(affinity);
@@ -249,9 +259,11 @@ function ProfessionRow({
 
   const nameClass = getNameCellClass(affinity);
   const secondaryStat = ct.secondaryStat;
+  const missionHighlight =
+    hoveredMission && ct.missions.includes(hoveredMission);
 
   return (
-    <tr className="border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/20">
+    <tr className={`border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""}`}>
       {/* Profession name */}
       <td
         className={`sticky left-0 z-10 px-2 py-1 font-display text-xs font-medium tracking-wide ${nameClass}`}
