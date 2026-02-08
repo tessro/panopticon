@@ -105,25 +105,38 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
   return (
     <table className="w-full border-collapse text-xs">
       <thead>
-        {/* Mission group header row */}
-        <tr className="border-b border-[var(--color-slate)]">
-          <th colSpan={fixedCols} className="bg-[var(--color-deep)]" />
-          {MISSION_GROUP_ORDER.map((group) => {
-            const ms = groupedMissions.get(group);
-            if (!ms || ms.length === 0) return null;
-            return (
-              <th
-                key={group}
-                colSpan={ms.length}
-                className="border-l border-[var(--color-slate)] bg-[var(--color-deep)] px-1 py-1 font-display text-[10px] font-medium tracking-widest text-[var(--color-cyan-dim)] uppercase"
+        {/* Angled mission names row */}
+        <tr>
+          <th colSpan={fixedCols} />
+          {orderedMissions.map((m) => (
+            <th
+              key={m.name}
+              className="p-0"
+              style={{ width: 28, minWidth: 28, maxWidth: 28 }}
+              onMouseEnter={() => setHoveredMission(m.name)}
+              onMouseLeave={() => setHoveredMission(null)}
+            >
+              <div
+                className="flex items-end justify-start"
+                style={{ height: 104 }}
               >
-                {GROUP_LABELS[group]}
-              </th>
-            );
-          })}
+                <span
+                  className="font-body block origin-bottom-left whitespace-nowrap text-[10px] leading-none text-[var(--color-ash)]"
+                  style={{
+                    transform: "rotate(-55deg)",
+                    transformOrigin: "bottom left",
+                    marginLeft: 22,
+                    marginBottom: 4,
+                  }}
+                >
+                  {m.friendlyName}
+                </span>
+              </div>
+            </th>
+          ))}
         </tr>
 
-        {/* Column header row with angled mission names */}
+        {/* Column labels + mission group labels */}
         <tr className="border-b border-[var(--color-steel)]">
           <th className="sticky left-0 z-10 bg-[var(--color-deep)] px-2 py-1 text-left font-display text-[10px] font-medium tracking-widest text-[var(--color-ash)] uppercase">
             Profession
@@ -143,36 +156,16 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
           <th className="bg-[var(--color-deep)] px-1 py-1 font-display text-[10px] font-medium tracking-widest text-[var(--color-ash)] uppercase">
             Crim
           </th>
-          {orderedMissions.map((m, i) => {
-            // Add left border at group boundaries
-            const isFirstInGroup =
-              i === 0 ||
-              getMissionGroup(orderedMissions[i - 1]!) !==
-                getMissionGroup(m);
+          {MISSION_GROUP_ORDER.map((group) => {
+            const ms = groupedMissions.get(group);
+            if (!ms || ms.length === 0) return null;
             return (
               <th
-                key={m.name}
-                className={`bg-[var(--color-deep)] p-0 ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""}`}
-                style={{ width: 28, minWidth: 28, maxWidth: 28 }}
-                onMouseEnter={() => setHoveredMission(m.name)}
-                onMouseLeave={() => setHoveredMission(null)}
+                key={group}
+                colSpan={ms.length}
+                className="border-l border-[var(--color-slate)] bg-[var(--color-deep)] px-1 py-1 font-display text-[10px] font-medium tracking-widest text-[var(--color-cyan-dim)] uppercase"
               >
-                <div
-                  className="flex items-end justify-start"
-                  style={{ height: 104 }}
-                >
-                  <span
-                    className="font-body block origin-bottom-left whitespace-nowrap text-[10px] leading-none text-[var(--color-ash)]"
-                    style={{
-                      transform: "rotate(-55deg)",
-                      transformOrigin: "bottom left",
-                      marginLeft: 22,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {m.friendlyName}
-                  </span>
-                </div>
+                {GROUP_LABELS[group]}
               </th>
             );
           })}
