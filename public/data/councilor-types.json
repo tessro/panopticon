@@ -1,0 +1,1270 @@
+[
+  {
+    "name": "Rebel",
+    "friendlyName": "Rebel",
+    "primaryStat": "Command",
+    "secondaryStat": "Espionage",
+    "affinities": [
+      "Destroy",
+      "Submit"
+    ],
+    "antiAffinities": [
+      "Cooperate",
+      "Appease"
+    ],
+    "missions": [
+      "Purge",
+      "SeizeSpaceAsset",
+      "DetectCouncilActivity",
+      "Assassinate",
+      "Turn",
+      "Extract",
+      "Protect",
+      "Unrest",
+      "Coup",
+      "SabotageFacilities",
+      "SabotageHabModule",
+      "SabotageProject",
+      "AssaultAlienAsset",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 4,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 2,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 5,
+        "rand": 2
+      },
+      "command": {
+        "base": 6,
+        "rand": 1
+      },
+      "administration": {
+        "base": 1,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 0
+      }
+    }
+  },
+  {
+    "name": "Operative",
+    "friendlyName": "Operative",
+    "primaryStat": "Espionage",
+    "secondaryStat": "Command",
+    "affinities": [
+      "Resist"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "Purge",
+      "Crackdown",
+      "SeizeSpaceAsset",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Assassinate",
+      "Extract",
+      "Protect",
+      "Detain",
+      "Unrest",
+      "Coup",
+      "Stabilize",
+      "SabotageFacilities",
+      "SabotageHabModule",
+      "SabotageProject",
+      "StealProject",
+      "AssaultAlienAsset",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 2,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 3,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 6,
+        "rand": 0
+      },
+      "command": {
+        "base": 4,
+        "rand": 1
+      },
+      "administration": {
+        "base": 0,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Fixer",
+    "friendlyName": "Fixer",
+    "primaryStat": "Espionage",
+    "secondaryStat": "Investigation",
+    "affinities": [
+      "Destroy",
+      "Submit"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "Purge",
+      "DefendInterests",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Assassinate",
+      "Extract",
+      "Protect",
+      "Detain",
+      "Unrest",
+      "Stabilize",
+      "SabotageFacilities",
+      "SabotageProject",
+      "StealProject",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 1,
+        "rand": 3
+      },
+      "investigation": {
+        "base": 4,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 5,
+        "rand": 1
+      },
+      "command": {
+        "base": 0,
+        "rand": 1
+      },
+      "administration": {
+        "base": 0,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Spy",
+    "friendlyName": "Spy",
+    "primaryStat": "Espionage",
+    "secondaryStat": "Persuasion",
+    "affinities": [
+      "Destroy"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "Purge",
+      "Crackdown",
+      "ControlSpaceAsset",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Assassinate",
+      "Turn",
+      "Extract",
+      "Unrest",
+      "Coup",
+      "SabotageFacilities",
+      "SabotageHabModule",
+      "SabotageProject",
+      "StealProject",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 5,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 5,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 6,
+        "rand": 0
+      },
+      "command": {
+        "base": 2,
+        "rand": 1
+      },
+      "administration": {
+        "base": 1,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Kingpin",
+    "friendlyName": "Kingpin",
+    "primaryStat": "Administration",
+    "secondaryStat": "Espionage",
+    "affinities": [
+      "Exploit",
+      "Destroy",
+      "Escape"
+    ],
+    "antiAffinities": [
+      "Cooperate",
+      "Appease"
+    ],
+    "missions": [
+      "GainInfluence",
+      "Purge",
+      "DefendInterests",
+      "SeizeSpaceAsset",
+      "DetectCouncilActivity",
+      "Assassinate",
+      "Extract",
+      "Protect",
+      "Detain",
+      "HostileTakeover",
+      "Unrest",
+      "Coup",
+      "SabotageFacilities",
+      "SabotageHabModule",
+      "StealProject"
+    ],
+    "weight": 5,
+    "stats": {
+      "persuasion": {
+        "base": 4,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 1,
+        "rand": 3
+      },
+      "espionage": {
+        "base": 4,
+        "rand": 1
+      },
+      "command": {
+        "base": 4,
+        "rand": 1
+      },
+      "administration": {
+        "base": 5,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 0
+      }
+    }
+  },
+  {
+    "name": "Activist",
+    "friendlyName": "Activist",
+    "primaryStat": "Persuasion",
+    "secondaryStat": "Command",
+    "affinities": [
+      "Submit",
+      "Cooperate"
+    ],
+    "antiAffinities": [
+      "Destroy",
+      "Appease"
+    ],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "ControlSpaceAsset",
+      "InvestigateCouncilor",
+      "Inspire",
+      "Turn",
+      "Unrest",
+      "Coup"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 6,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 4,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 3,
+        "rand": 2
+      },
+      "command": {
+        "base": 0,
+        "rand": 1
+      },
+      "administration": {
+        "base": 0,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Inspector",
+    "friendlyName": "Inspector",
+    "primaryStat": "Investigation",
+    "secondaryStat": "Command",
+    "affinities": [
+      "Appease"
+    ],
+    "antiAffinities": [
+      "Escape",
+      "Exploit"
+    ],
+    "missions": [
+      "GainInfluence",
+      "Purge",
+      "Crackdown",
+      "DefendInterests",
+      "SeizeSpaceAsset",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Extract",
+      "Protect",
+      "Detain",
+      "Stabilize",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 3,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 5,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 2,
+        "rand": 2
+      },
+      "command": {
+        "base": 4,
+        "rand": 1
+      },
+      "administration": {
+        "base": 4,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 2
+      }
+    }
+  },
+  {
+    "name": "Officer",
+    "friendlyName": "Officer",
+    "primaryStat": "Command",
+    "secondaryStat": "Administration",
+    "affinities": [
+      "Resist"
+    ],
+    "antiAffinities": [
+      "Escape",
+      "Submit"
+    ],
+    "missions": [
+      "GainInfluence",
+      "DefendInterests",
+      "SeizeSpaceAsset",
+      "DetectCouncilActivity",
+      "Inspire",
+      "Extract",
+      "Protect",
+      "Detain",
+      "Coup",
+      "Stabilize",
+      "AssaultAlienAsset",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 4,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 1,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 3
+      },
+      "command": {
+        "base": 7,
+        "rand": 1
+      },
+      "administration": {
+        "base": 4,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 2
+      }
+    }
+  },
+  {
+    "name": "Judge",
+    "friendlyName": "Judge",
+    "primaryStat": "Investigation",
+    "secondaryStat": "Administration",
+    "affinities": [
+      "Appease",
+      "Resist"
+    ],
+    "antiAffinities": [
+      "Escape"
+    ],
+    "missions": [
+      "GainInfluence",
+      "Purge",
+      "Crackdown",
+      "DefendInterests",
+      "ControlSpaceAsset",
+      "InvestigateCouncilor",
+      "Detain",
+      "HostileTakeover",
+      "Stabilize",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 5,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 5,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 2
+      },
+      "command": {
+        "base": 1,
+        "rand": 1
+      },
+      "administration": {
+        "base": 3,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Politician",
+    "friendlyName": "Politician",
+    "primaryStat": "Administration",
+    "secondaryStat": "Persuasion",
+    "affinities": [
+      "Appease",
+      "Exploit",
+      "Cooperate"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "Purge",
+      "Crackdown",
+      "DefendInterests",
+      "ControlSpaceAsset",
+      "Coup",
+      "Advise"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 6,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 3,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 3
+      },
+      "command": {
+        "base": 1,
+        "rand": 2
+      },
+      "administration": {
+        "base": 4,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Executive",
+    "friendlyName": "Executive",
+    "primaryStat": "Administration",
+    "secondaryStat": "Command",
+    "affinities": [],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Purge",
+      "Crackdown",
+      "DefendInterests",
+      "ControlSpaceAsset",
+      "HostileTakeover",
+      "Advise"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 4,
+        "rand": 3
+      },
+      "investigation": {
+        "base": 2,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 0,
+        "rand": 2
+      },
+      "command": {
+        "base": 4,
+        "rand": 1
+      },
+      "administration": {
+        "base": 5,
+        "rand": 1
+      },
+      "science": {
+        "base": 0,
+        "rand": 3
+      }
+    }
+  },
+  {
+    "name": "Journalist",
+    "friendlyName": "Journalist",
+    "primaryStat": "Persuasion",
+    "secondaryStat": "Investigation",
+    "affinities": [
+      "Resist"
+    ],
+    "antiAffinities": [
+      "Exploit"
+    ],
+    "missions": [
+      "Propaganda",
+      "Crackdown",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Inspire",
+      "Turn",
+      "Unrest",
+      "Stabilize",
+      "StealProject",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 6,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 6,
+        "rand": 0
+      },
+      "espionage": {
+        "base": 3,
+        "rand": 2
+      },
+      "command": {
+        "base": 0,
+        "rand": 0
+      },
+      "administration": {
+        "base": 0,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 3
+      }
+    }
+  },
+  {
+    "name": "Commando",
+    "friendlyName": "Commando",
+    "primaryStat": "Command",
+    "secondaryStat": "Security",
+    "affinities": [
+      "Destroy"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "SeizeSpaceAsset",
+      "DetectCouncilActivity",
+      "Assassinate",
+      "Extract",
+      "Protect",
+      "Detain",
+      "Unrest",
+      "Stabilize",
+      "SabotageFacilities",
+      "SabotageHabModule",
+      "AssaultAlienAsset",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 1,
+        "rand": 0
+      },
+      "investigation": {
+        "base": 2,
+        "rand": 3
+      },
+      "espionage": {
+        "base": 4,
+        "rand": 2
+      },
+      "command": {
+        "base": 5,
+        "rand": 1
+      },
+      "administration": {
+        "base": 1,
+        "rand": 0
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Evangelist",
+    "friendlyName": "Evangelist",
+    "primaryStat": "Persuasion",
+    "secondaryStat": null,
+    "affinities": [
+      "Submit",
+      "Exploit",
+      "Destroy"
+    ],
+    "antiAffinities": [
+      "Cooperate"
+    ],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "Crackdown",
+      "Inspire",
+      "Turn",
+      "Unrest",
+      "Stabilize",
+      "Advise"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 7,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 1,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 0,
+        "rand": 1
+      },
+      "command": {
+        "base": 1,
+        "rand": 3
+      },
+      "administration": {
+        "base": 3,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 0
+      }
+    }
+  },
+  {
+    "name": "Diplomat",
+    "friendlyName": "Diplomat",
+    "primaryStat": "Persuasion",
+    "secondaryStat": "Administration",
+    "affinities": [
+      "Cooperate",
+      "Appease",
+      "Resist"
+    ],
+    "antiAffinities": [
+      "Destroy"
+    ],
+    "missions": [
+      "GainInfluence",
+      "DefendInterests",
+      "ControlSpaceAsset",
+      "DetectCouncilActivity",
+      "Turn",
+      "Stabilize",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 5,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 3,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 4,
+        "rand": 2
+      },
+      "command": {
+        "base": 2,
+        "rand": 1
+      },
+      "administration": {
+        "base": 4,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Hacker",
+    "friendlyName": "Hacker",
+    "primaryStat": "Espionage",
+    "secondaryStat": "Science",
+    "affinities": [
+      "Exploit",
+      "Submit"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "Propaganda",
+      "Crackdown",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Unrest",
+      "SabotageHabModule",
+      "SabotageProject",
+      "StealProject"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 2,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 4,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 5,
+        "rand": 1
+      },
+      "command": {
+        "base": 0,
+        "rand": 1
+      },
+      "administration": {
+        "base": 1,
+        "rand": 2
+      },
+      "science": {
+        "base": 4,
+        "rand": 2
+      }
+    }
+  },
+  {
+    "name": "Investigator",
+    "friendlyName": "Investigator",
+    "primaryStat": "Investigation",
+    "secondaryStat": "Espionage",
+    "affinities": [],
+    "antiAffinities": [],
+    "missions": [
+      "Purge",
+      "Crackdown",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Detain",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 2,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 7,
+        "rand": 0
+      },
+      "espionage": {
+        "base": 4,
+        "rand": 1
+      },
+      "command": {
+        "base": 0,
+        "rand": 1
+      },
+      "administration": {
+        "base": 1,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 2
+      }
+    }
+  },
+  {
+    "name": "Celebrity",
+    "friendlyName": "Celebrity",
+    "primaryStat": "Persuasion",
+    "secondaryStat": "Security",
+    "affinities": [],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "ControlSpaceAsset",
+      "Inspire",
+      "Turn"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 7,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 1,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 0,
+        "rand": 1
+      },
+      "command": {
+        "base": 0,
+        "rand": 1
+      },
+      "administration": {
+        "base": 3,
+        "rand": 2
+      },
+      "science": {
+        "base": 0,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "TechMogul",
+    "friendlyName": "Tech Mogul",
+    "primaryStat": "Administration",
+    "secondaryStat": "Science",
+    "affinities": [
+      "Escape",
+      "Exploit",
+      "Submit"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "ControlSpaceAsset",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "HostileTakeover",
+      "StealProject",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 4,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 2,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 2
+      },
+      "command": {
+        "base": 1,
+        "rand": 1
+      },
+      "administration": {
+        "base": 4,
+        "rand": 2
+      },
+      "science": {
+        "base": 5,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Scientist",
+    "friendlyName": "Scientist",
+    "primaryStat": "Science",
+    "secondaryStat": "Investigation",
+    "affinities": [
+      "Cooperate",
+      "Escape",
+      "Resist"
+    ],
+    "antiAffinities": [
+      "Submit"
+    ],
+    "missions": [
+      "GainInfluence",
+      "ControlSpaceAsset",
+      "SabotageProject",
+      "StealProject",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 1,
+        "rand": 4
+      },
+      "investigation": {
+        "base": 4,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 0,
+        "rand": 2
+      },
+      "command": {
+        "base": 0,
+        "rand": 0
+      },
+      "administration": {
+        "base": 3,
+        "rand": 2
+      },
+      "science": {
+        "base": 7,
+        "rand": 0
+      }
+    }
+  },
+  {
+    "name": "Astronaut",
+    "friendlyName": "Astronaut",
+    "primaryStat": "Command",
+    "secondaryStat": "Science",
+    "affinities": [
+      "Escape",
+      "Cooperate",
+      "Resist"
+    ],
+    "antiAffinities": [
+      "Submit"
+    ],
+    "missions": [
+      "GainInfluence",
+      "Propaganda",
+      "ControlSpaceAsset",
+      "SeizeSpaceAsset",
+      "Inspire",
+      "SabotageHabModule",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 1,
+    "stats": {
+      "persuasion": {
+        "base": 3,
+        "rand": 2
+      },
+      "investigation": {
+        "base": 1,
+        "rand": 3
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 1
+      },
+      "command": {
+        "base": 6,
+        "rand": 1
+      },
+      "administration": {
+        "base": 3,
+        "rand": 3
+      },
+      "science": {
+        "base": 5,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Professor",
+    "friendlyName": "Professor",
+    "primaryStat": "Science",
+    "secondaryStat": "Persuasion",
+    "affinities": [
+      "Cooperate",
+      "Appease"
+    ],
+    "antiAffinities": [
+      "Destroy",
+      "Exploit"
+    ],
+    "missions": [
+      "GainInfluence",
+      "DetectCouncilActivity",
+      "Inspire",
+      "Turn",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 4,
+        "rand": 3
+      },
+      "investigation": {
+        "base": 5,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 3
+      },
+      "command": {
+        "base": 0,
+        "rand": 1
+      },
+      "administration": {
+        "base": 1,
+        "rand": 3
+      },
+      "science": {
+        "base": 5,
+        "rand": 1
+      }
+    }
+  },
+  {
+    "name": "Tycoon",
+    "friendlyName": "Tycoon",
+    "primaryStat": "Administration",
+    "secondaryStat": "Security",
+    "affinities": [
+      "Exploit",
+      "Appease",
+      "Escape"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Purge",
+      "DefendInterests",
+      "HostileTakeover"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 2,
+        "rand": 3
+      },
+      "investigation": {
+        "base": 1,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 2
+      },
+      "command": {
+        "base": 3,
+        "rand": 2
+      },
+      "administration": {
+        "base": 7,
+        "rand": 1
+      },
+      "science": {
+        "base": 1,
+        "rand": 3
+      }
+    }
+  },
+  {
+    "name": "Attorney",
+    "friendlyName": "Attorney",
+    "primaryStat": "Investigation",
+    "secondaryStat": "Persuasion",
+    "affinities": [],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "Purge",
+      "Crackdown",
+      "DefendInterests",
+      "ControlSpaceAsset",
+      "DetectCouncilActivity",
+      "InvestigateCouncilor",
+      "Turn",
+      "Detain",
+      "HostileTakeover",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 6,
+        "rand": 1
+      },
+      "investigation": {
+        "base": 6,
+        "rand": 1
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 2
+      },
+      "command": {
+        "base": 1,
+        "rand": 1
+      },
+      "administration": {
+        "base": 3,
+        "rand": 3
+      },
+      "science": {
+        "base": 0,
+        "rand": 2
+      }
+    }
+  },
+  {
+    "name": "Engineer",
+    "friendlyName": "Engineer",
+    "primaryStat": "Science",
+    "secondaryStat": "Administration",
+    "affinities": [
+      "Escape"
+    ],
+    "antiAffinities": [],
+    "missions": [
+      "GainInfluence",
+      "ControlSpaceAsset",
+      "SabotageFacilities",
+      "SabotageHabModule",
+      "SabotageProject",
+      "StealProject",
+      "Advise",
+      "InvestigateAlienActivity"
+    ],
+    "weight": 10,
+    "stats": {
+      "persuasion": {
+        "base": 2,
+        "rand": 4
+      },
+      "investigation": {
+        "base": 4,
+        "rand": 2
+      },
+      "espionage": {
+        "base": 1,
+        "rand": 1
+      },
+      "command": {
+        "base": 1,
+        "rand": 1
+      },
+      "administration": {
+        "base": 4,
+        "rand": 2
+      },
+      "science": {
+        "base": 6,
+        "rand": 1
+      }
+    }
+  }
+]

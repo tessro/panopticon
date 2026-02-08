@@ -1,0 +1,352 @@
+[
+  {
+    "name": "Abductions",
+    "friendlyName": "Abductions",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 33
+  },
+  {
+    "name": "Advise",
+    "friendlyName": "Advise",
+    "attackStat": null,
+    "resourceType": "Influence",
+    "sortOrder": 8
+  },
+  {
+    "name": "Assassinate",
+    "friendlyName": "Assassinate Councilor",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 15
+  },
+  {
+    "name": "AssaultAlienAsset",
+    "friendlyName": "Assault Alien Asset",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 32
+  },
+  {
+    "name": "AssumeControl",
+    "friendlyName": "Grant Alien Control",
+    "attackStat": null,
+    "resourceType": "Influence",
+    "sortOrder": 40
+  },
+  {
+    "name": "BuildFacility",
+    "friendlyName": "Build Facility",
+    "attackStat": null,
+    "resourceType": "Money",
+    "sortOrder": 38
+  },
+  {
+    "name": "Contact",
+    "friendlyName": "Contact Councilor",
+    "attackStat": null,
+    "resourceType": "Influence",
+    "sortOrder": 25
+  },
+  {
+    "name": "ControlSpaceAsset",
+    "friendlyName": "Control Space Asset",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 29
+  },
+  {
+    "name": "Coup",
+    "friendlyName": "Coup d'Etat",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 4
+  },
+  {
+    "name": "Crackdown",
+    "friendlyName": "Crackdown",
+    "attackStat": "Investigation",
+    "resourceType": "Influence",
+    "sortOrder": 2
+  },
+  {
+    "name": "DefendInterests",
+    "friendlyName": "Defend Interests",
+    "attackStat": null,
+    "resourceType": "Influence",
+    "sortOrder": 5
+  },
+  {
+    "name": "Deorbit",
+    "friendlyName": "Deorbit",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 27
+  },
+  {
+    "name": "Detain",
+    "friendlyName": "Detain Councilor",
+    "attackStat": "Investigation",
+    "resourceType": "Operations",
+    "sortOrder": 14
+  },
+  {
+    "name": "DetectCouncilActivity",
+    "friendlyName": "Surveil Location",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 12
+  },
+  {
+    "name": "DominateNation",
+    "friendlyName": "Dominate Nation",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 0
+  },
+  {
+    "name": "EnthrallElites",
+    "friendlyName": "Enthrall Elites",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 36
+  },
+  {
+    "name": "EnthrallOrg",
+    "friendlyName": "Enthrall Org",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 37
+  },
+  {
+    "name": "EnthrallPublic",
+    "friendlyName": "Enthrall Public",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 34
+  },
+  {
+    "name": "EnthrallUnalignedElites",
+    "friendlyName": "Enthrall Unaligned Elites",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 35
+  },
+  {
+    "name": "Extract",
+    "friendlyName": "Extract Councilor",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 17
+  },
+  {
+    "name": "GainInfluence",
+    "friendlyName": "Control Nation",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 1
+  },
+  {
+    "name": "GoToGround",
+    "friendlyName": "Go To Ground",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 24
+  },
+  {
+    "name": "HostileTakeover",
+    "friendlyName": "Hostile Takeover",
+    "attackStat": "Administration",
+    "resourceType": "Money",
+    "sortOrder": 19
+  },
+  {
+    "name": "Inspire",
+    "friendlyName": "Inspire Councilor",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 22
+  },
+  {
+    "name": "InvestigateAlienActivity",
+    "friendlyName": "Investigate Alien Activity",
+    "attackStat": null,
+    "resourceType": "Operations",
+    "sortOrder": 31
+  },
+  {
+    "name": "InvestigateCouncilor",
+    "friendlyName": "Investigate Councilor",
+    "attackStat": "Investigation",
+    "resourceType": "Operations",
+    "sortOrder": 13
+  },
+  {
+    "name": "Orbit",
+    "friendlyName": "Orbit",
+    "attackStat": null,
+    "resourceType": "Boost",
+    "sortOrder": 26
+  },
+  {
+    "name": "PassTechnology",
+    "friendlyName": "Pass Technology",
+    "attackStat": null,
+    "resourceType": "Influence",
+    "sortOrder": 41
+  },
+  {
+    "name": "Propaganda",
+    "friendlyName": "Public Campaign",
+    "attackStat": "Persuasion",
+    "resourceType": "Money",
+    "sortOrder": 6
+  },
+  {
+    "name": "Protect",
+    "friendlyName": "Protect Councilor",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 23
+  },
+  {
+    "name": "Purge",
+    "friendlyName": "Purge",
+    "attackStat": "Espionage",
+    "resourceType": "Influence",
+    "sortOrder": 3
+  },
+  {
+    "name": "SabotageFacilities",
+    "friendlyName": "Sabotage Facilities",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 11
+  },
+  {
+    "name": "SabotageHabModule",
+    "friendlyName": "Sabotage Hab Module",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 11
+  },
+  {
+    "name": "SabotageProject",
+    "friendlyName": "Sabotage Project",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 20
+  },
+  {
+    "name": "SeizeSpaceAsset",
+    "friendlyName": "Seize Space Asset",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 30
+  },
+  {
+    "name": "SetNationalPolicy",
+    "friendlyName": "Set National Policy",
+    "attackStat": null,
+    "resourceType": "Influence",
+    "sortOrder": 7
+  },
+  {
+    "name": "Stabilize",
+    "friendlyName": "Stabilize Nation",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 10
+  },
+  {
+    "name": "StealProject",
+    "friendlyName": "Steal Project",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 21
+  },
+  {
+    "name": "TerrorizeRegion",
+    "friendlyName": "Terrorize Region",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 39
+  },
+  {
+    "name": "Transfer",
+    "friendlyName": "Transfer",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 28
+  },
+  {
+    "name": "Turn",
+    "friendlyName": "Turn Councilor",
+    "attackStat": "Persuasion",
+    "resourceType": "Influence",
+    "sortOrder": 16
+  },
+  {
+    "name": "Unrest",
+    "friendlyName": "Increase Unrest",
+    "attackStat": "Command",
+    "resourceType": "Operations",
+    "sortOrder": 9
+  },
+  {
+    "name": "Xenoform",
+    "friendlyName": "Xenoform",
+    "attackStat": "Espionage",
+    "resourceType": "Operations",
+    "sortOrder": 42
+  },
+  {
+    "name": "ResistWin",
+    "friendlyName": "Close the Gate",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 0
+  },
+  {
+    "name": "DestroyWin",
+    "friendlyName": "Trigger the Weapon",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 0
+  },
+  {
+    "name": "AppeaseWin",
+    "friendlyName": "Claim Hegemony",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": -1
+  },
+  {
+    "name": "EscapeWin",
+    "friendlyName": "Launch the Bifrost",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 0
+  },
+  {
+    "name": "SubmitWin",
+    "friendlyName": "Herald Our Masters",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 0
+  },
+  {
+    "name": "CooperateWin",
+    "friendlyName": "Forge an Alliance",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 0
+  },
+  {
+    "name": "ExploitWin",
+    "friendlyName": "Tame the Enemy",
+    "attackStat": null,
+    "resourceType": null,
+    "sortOrder": 0
+  }
+]

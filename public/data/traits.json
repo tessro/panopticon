@@ -1,0 +1,220 @@
+[
+  {
+    "name": "Government",
+    "classChance": [
+      {
+        "class": "Activist",
+        "chance": 5
+      },
+      {
+        "class": "Astronaut",
+        "chance": 100
+      },
+      {
+        "class": "Celebrity",
+        "chance": 1
+      },
+      {
+        "class": "Commando",
+        "chance": 50
+      },
+      {
+        "class": "Diplomat",
+        "chance": 100
+      },
+      {
+        "class": "Evangelist",
+        "chance": 0
+      },
+      {
+        "class": "Executive",
+        "chance": 10
+      },
+      {
+        "class": "Fixer",
+        "chance": 10
+      },
+      {
+        "class": "Hacker",
+        "chance": 5
+      },
+      {
+        "class": "Inspector",
+        "chance": 75
+      },
+      {
+        "class": "Investigator",
+        "chance": 75
+      },
+      {
+        "class": "Journalist",
+        "chance": 5
+      },
+      {
+        "class": "Judge",
+        "chance": 100
+      },
+      {
+        "class": "Kingpin",
+        "chance": 0
+      },
+      {
+        "class": "Officer",
+        "chance": 100
+      },
+      {
+        "class": "Operative",
+        "chance": 50
+      },
+      {
+        "class": "Politician",
+        "chance": 100
+      },
+      {
+        "class": "Professor",
+        "chance": 1
+      },
+      {
+        "class": "Rebel",
+        "chance": 0
+      },
+      {
+        "class": "Scientist",
+        "chance": 5
+      },
+      {
+        "class": "Spy",
+        "chance": 50
+      },
+      {
+        "class": "TechMogul",
+        "chance": 0
+      },
+      {
+        "class": "Tycoon",
+        "chance": 0
+      },
+      {
+        "class": "Attorney",
+        "chance": 5
+      },
+      {
+        "class": "Engineer",
+        "chance": 10
+      },
+      {
+        "class": "Alien",
+        "chance": 0
+      }
+    ]
+  },
+  {
+    "name": "Criminal",
+    "classChance": [
+      {
+        "class": "Activist",
+        "chance": 10
+      },
+      {
+        "class": "Astronaut",
+        "chance": 0
+      },
+      {
+        "class": "Celebrity",
+        "chance": 5
+      },
+      {
+        "class": "Commando",
+        "chance": 0
+      },
+      {
+        "class": "Diplomat",
+        "chance": 0
+      },
+      {
+        "class": "Evangelist",
+        "chance": 1
+      },
+      {
+        "class": "Executive",
+        "chance": 0
+      },
+      {
+        "class": "Fixer",
+        "chance": 10
+      },
+      {
+        "class": "Hacker",
+        "chance": 25
+      },
+      {
+        "class": "Inspector",
+        "chance": 0
+      },
+      {
+        "class": "Investigator",
+        "chance": 0
+      },
+      {
+        "class": "Journalist",
+        "chance": 5
+      },
+      {
+        "class": "Judge",
+        "chance": 0
+      },
+      {
+        "class": "Kingpin",
+        "chance": 100
+      },
+      {
+        "class": "Officer",
+        "chance": 0
+      },
+      {
+        "class": "Operative",
+        "chance": 1
+      },
+      {
+        "class": "Politician",
+        "chance": 1
+      },
+      {
+        "class": "Professor",
+        "chance": 0
+      },
+      {
+        "class": "Rebel",
+        "chance": 20
+      },
+      {
+        "class": "Scientist",
+        "chance": 0
+      },
+      {
+        "class": "Spy",
+        "chance": 1
+      },
+      {
+        "class": "TechMogul",
+        "chance": 0
+      },
+      {
+        "class": "Tycoon",
+        "chance": 1
+      },
+      {
+        "class": "Attorney",
+        "chance": 2
+      },
+      {
+        "class": "Engineer",
+        "chance": 0
+      },
+      {
+        "class": "Alien",
+        "chance": 0
+      }
+    ]
+  }
+]

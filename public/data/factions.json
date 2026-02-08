@@ -1,0 +1,86 @@
+[
+  {
+    "name": "ResistCouncil",
+    "friendlyName": "The Resistance",
+    "ideology": "resist",
+    "color": {
+      "r": 0.45,
+      "g": 0.63,
+      "b": 0.9,
+      "a": 1
+    },
+    "backgroundColor": "#141F30"
+  },
+  {
+    "name": "DestroyCouncil",
+    "friendlyName": "Humanity First",
+    "ideology": "destroy",
+    "color": {
+      "r": 0.757,
+      "g": 0.114,
+      "b": 0.157,
+      "a": 1
+    },
+    "backgroundColor": "#47272C"
+  },
+  {
+    "name": "ExploitCouncil",
+    "friendlyName": "The Initiative",
+    "ideology": "exploit",
+    "color": {
+      "r": 0.929,
+      "g": 0.518,
+      "b": 0.251,
+      "a": 1
+    },
+    "backgroundColor": "#D47739"
+  },
+  {
+    "name": "SubmitCouncil",
+    "friendlyName": "The Servants",
+    "ideology": "submit",
+    "color": {
+      "r": 0.478,
+      "g": 0.373,
+      "b": 0.643,
+      "a": 1
+    },
+    "backgroundColor": "#1B1F30"
+  },
+  {
+    "name": "AppeaseCouncil",
+    "friendlyName": "The Protectorate",
+    "ideology": "appease",
+    "color": {
+      "r": 0.572,
+      "g": 0.796,
+      "b": 0.851,
+      "a": 1
+    },
+    "backgroundColor": "#1B403E"
+  },
+  {
+    "name": "CooperateCouncil",
+    "friendlyName": "The Academy",
+    "ideology": "cooperate",
+    "color": {
+      "r": 0.29,
+      "g": 0.407,
+      "b": 0.223,
+      "a": 1
+    },
+    "backgroundColor": "#24331D"
+  },
+  {
+    "name": "EscapeCouncil",
+    "friendlyName": "Project Exodus",
+    "ideology": "escape",
+    "color": {
+      "r": 0.95,
+      "g": 0.717,
+      "b": 0.18,
+      "a": 1
+    },
+    "backgroundColor": "#685326"
+  }
+]
