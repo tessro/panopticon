@@ -11,8 +11,7 @@ if (redirectPath) {
   params.delete("p");
   const remaining = params.toString();
   const newUrl =
-    import.meta.env.BASE_URL +
-    redirectPath.replace(/^\//, "") +
+    redirectPath +
     (remaining ? `?${remaining}` : "") +
     window.location.hash;
   window.history.replaceState(null, "", newUrl);
@@ -20,7 +19,7 @@ if (redirectPath) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <BrowserRouter>
       <App />
     </BrowserRouter>
   </StrictMode>,

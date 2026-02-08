@@ -4,17 +4,11 @@
     <meta charset="utf-8" />
     <title>Panopticon</title>
     <script>
-      // SPA redirect for GitHub Pages: rewrite the path as a query param
+      // SPA redirect for GitHub Pages: preserve the path via query param
       // so index.html can restore it via the router.
-      var seg = location.pathname.split("/").filter(Boolean);
-      var repo = "panopticon";
-      // Strip the repo prefix if present
-      if (seg[0] === repo) seg.shift();
-      var path = "/" + seg.join("/");
+      var path = location.pathname;
       location.replace(
         location.origin +
-          "/" +
-          repo +
           "/?p=" +
           encodeURIComponent(path) +
           location.search.replace("?", "&") +
