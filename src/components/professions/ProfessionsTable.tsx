@@ -111,7 +111,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
           {orderedMissions.map((m) => (
             <th
               key={m.name}
-              className="p-0"
+              className="mission-col-header p-0"
               style={{ width: 28, minWidth: 28, maxWidth: 28 }}
               onMouseEnter={() => setHoveredMission(m.name)}
               onMouseLeave={() => setHoveredMission(null)}

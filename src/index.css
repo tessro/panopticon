@@ -86,3 +86,20 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-ash);
 }
+
+/* Diagonal separator between angled mission header columns */
+th.mission-col-header {
+  position: relative;
+}
+
+th.mission-col-header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 100%;
+  border-left: 1px solid var(--color-slate);
+  transform: rotate(-55deg);
+  transform-origin: bottom left;
+  pointer-events: none;
+}
