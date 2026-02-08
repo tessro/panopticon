@@ -159,7 +159,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
               >
                 <div
                   className="flex items-end justify-start"
-                  style={{ height: 80 }}
+                  style={{ height: 104 }}
                 >
                   <span
                     className="font-body block origin-bottom-left whitespace-nowrap text-[10px] leading-none text-[var(--color-ash)]"
@@ -277,7 +277,7 @@ function ProfessionRow({
     <tr className={`border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""}`}>
       {/* Profession name */}
       <td
-        className={`sticky left-0 z-10 px-2 py-1.5 font-display text-xs font-medium tracking-wide ${nameClass}`}
+        className={`sticky left-0 z-10 px-2 py-1 font-display text-xs font-medium tracking-wide ${nameClass}`}
       >
         {affinity === "ban" ? (
           <span className="line-through opacity-50">{ct.friendlyName}</span>
@@ -287,27 +287,27 @@ function ProfessionRow({
       </td>
 
       {/* Primary stat */}
-      <td className="px-1 py-1.5 text-center font-mono text-[11px] font-medium text-[var(--color-light)]">
+      <td className="px-1 py-1 text-center font-mono text-[11px] font-medium text-[var(--color-light)]">
         {STAT_ABBREV[ct.primaryStat]}
       </td>
 
       {/* Secondary stat */}
-      <td className="px-1 py-1.5 text-center font-mono text-[11px] text-[var(--color-ash)]/50">
+      <td className="px-1 py-1 text-center font-mono text-[11px] text-[var(--color-ash)]/50">
         {secondaryStat ? STAT_ABBREV[secondaryStat] : "—"}
       </td>
 
       {/* Cost */}
-      <td className="px-1 py-1.5 text-center font-mono text-[11px]">
+      <td className="px-1 py-1 text-center font-mono text-[11px]">
         <CostCell cost={cost} affinity={affinity} />
       </td>
 
       {/* Government trait */}
-      <td className="px-1 py-1.5 text-center font-mono text-[10px] text-[var(--color-ash)]">
+      <td className="px-1 py-1 text-center font-mono text-[10px] text-[var(--color-ash)]">
         {govChance > 0 ? <TraitBadge chance={govChance} /> : "—"}
       </td>
 
       {/* Criminal trait */}
-      <td className="px-1 py-1.5 text-center font-mono text-[10px] text-[var(--color-ash)]">
+      <td className="px-1 py-1 text-center font-mono text-[10px] text-[var(--color-ash)]">
         {crimChance > 0 ? <TraitBadge chance={crimChance} /> : "—"}
       </td>
 
@@ -320,7 +320,7 @@ function ProfessionRow({
         return (
           <td
             key={m.name}
-            className={`px-0 py-1.5 text-center ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""}`}
+            className={`px-0 py-1 text-center ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""}`}
           >
             {has && (
               <span className="font-mono text-[11px] font-medium text-[var(--color-cyan)]">
