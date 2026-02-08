@@ -64,8 +64,10 @@ export const PROFESSION_STAT_GROUP_ORDER: StatName[] = [
 ];
 
 export function getProfessionStatGroup(ct: CouncilorType): StatName {
-  // Exception: Astronaut grouped with PER professions
+  // Exceptions: group by dominant mission category rather than primary stat
   if (ct.name === "Astronaut") return "Persuasion";
+  if (ct.name === "Politician") return "Persuasion";
+  if (ct.name === "Journalist") return "Investigation";
   return ct.primaryStat;
 }
 
