@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { CouncilorType, Mission, Trait, AffinityStatus } from "@/types/game";
 import { STAT_ABBREV } from "@/types/game";
 import {
@@ -33,6 +33,8 @@ const GROUP_LABELS: Record<MissionGroup, string> = {
 
 export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
   const selectedFaction = useAppStore((s) => s.selectedFaction);
+  const professionCounts = useAppStore((s) => s.professionCounts);
+  const setProfessionCount = useAppStore((s) => s.setProfessionCount);
 
   // Only show missions that appear in at least one (non-alien) councilor type's list.
   // The preprocessed data already excludes the Alien type, so this naturally filters
@@ -97,6 +99,31 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
 
   const govTrait = traits.find((t) => t.name === "Government");
   const crimTrait = traits.find((t) => t.name === "Criminal");
+
+  // Compute mission totals based on profession counts
+  const missionTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const m of orderedMissions) {
+      let total = 0;
+      for (const ct of councilorTypes) {
+        if (ct.missions.includes(m.name)) {
+          total += professionCounts[ct.name] ?? 0;
+        }
+      }
+      totals.set(m.name, total);
+    }
+    return totals;
+  }, [orderedMissions, councilorTypes, professionCounts]);
+
+  const hasAnyCounts = useMemo(
+    () => councilorTypes.some((ct) => (professionCounts[ct.name] ?? 0) > 0),
+    [councilorTypes, professionCounts],
+  );
+
+  const handleSetCount = useCallback(
+    (name: string, count: number) => setProfessionCount(name, count),
+    [setProfessionCount],
+  );
 
   // Fixed column count: name + primary + secondary + cost + gov + crim + missions
   const fixedCols = 6;
@@ -178,9 +205,35 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
               crimTrait={crimTrait}
               totalCols={fixedCols + missionCols}
               hoveredMission={hoveredMission}
+              professionCounts={professionCounts}
+              onSetCount={handleSetCount}
             />
           );
         })}
+        {/* Totals row */}
+        {hasAnyCounts && (
+          <tr className="border-t-2 border-[var(--color-cyan-dim)]">
+            <td className="sticky left-0 z-10 bg-[var(--color-deep)] px-2 py-1 font-display text-xs font-semibold tracking-wide text-[var(--color-cyan)]">
+              Totals
+            </td>
+            <td colSpan={5} />
+            {orderedMissions.map((m, i) => {
+              const total = missionTotals.get(m.name) ?? 0;
+              const isFirstInGroup =
+                i === 0 ||
+                getMissionGroup(orderedMissions[i - 1]!) !== getMissionGroup(m);
+              const isHoveredCol = hoveredMission === m.name;
+              return (
+                <td
+                  key={m.name}
+                  className={`px-0 py-1 text-center font-mono text-[11px] font-medium ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""} ${isHoveredCol ? "bg-[var(--color-cyan)]/10" : ""} ${total > 0 ? "text-[var(--color-cyan)]" : "text-[var(--color-ash)]/30"}`}
+                >
+                  {total > 0 ? total : ""}
+                </td>
+              );
+            })}
+          </tr>
+        )}
       </tbody>
     </table>
   );
@@ -195,6 +248,8 @@ function ProfessionGroup({
   crimTrait,
   totalCols,
   hoveredMission,
+  professionCounts,
+  onSetCount,
 }: {
   statGroup: string;
   professions: CouncilorType[];
@@ -204,6 +259,8 @@ function ProfessionGroup({
   crimTrait: Trait | undefined;
   totalCols: number;
   hoveredMission: string | null;
+  professionCounts: Record<string, number>;
+  onSetCount: (name: string, count: number) => void;
 }) {
   const abbrev = STAT_ABBREV[statGroup as keyof typeof STAT_ABBREV] ?? statGroup;
 
@@ -227,6 +284,8 @@ function ProfessionGroup({
           govTrait={govTrait}
           crimTrait={crimTrait}
           hoveredMission={hoveredMission}
+          count={professionCounts[ct.name] ?? 0}
+          onSetCount={onSetCount}
         />
       ))}
     </>
@@ -240,6 +299,8 @@ function ProfessionRow({
   govTrait,
   crimTrait,
   hoveredMission,
+  count,
+  onSetCount,
 }: {
   ct: CouncilorType;
   orderedMissions: Mission[];
@@ -247,6 +308,8 @@ function ProfessionRow({
   govTrait: Trait | undefined;
   crimTrait: Trait | undefined;
   hoveredMission: string | null;
+  count: number;
+  onSetCount: (name: string, count: number) => void;
 }) {
   const affinity = getAffinityStatus(ct, selectedFaction);
   const cost = getHireCost(affinity);
@@ -260,15 +323,22 @@ function ProfessionRow({
 
   return (
     <tr className={`group/row border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""}`}>
-      {/* Profession name */}
+      {/* Profession name + count spinner */}
       <td
         className={`sticky left-0 z-10 px-2 py-1 font-display text-xs font-medium tracking-wide ${nameClass}`}
       >
-        {affinity === "ban" ? (
-          <span className="line-through opacity-50">{ct.friendlyName}</span>
-        ) : (
-          ct.friendlyName
-        )}
+        <div className="flex items-center justify-between gap-1">
+          {affinity === "ban" ? (
+            <span className="line-through opacity-50">{ct.friendlyName}</span>
+          ) : (
+            <span>{ct.friendlyName}</span>
+          )}
+          <CountSpinner
+            count={count}
+            onDecrement={() => onSetCount(ct.name, count - 1)}
+            onIncrement={() => onSetCount(ct.name, count + 1)}
+          />
+        </div>
       </td>
 
       {/* Primary stat */}
@@ -317,6 +387,39 @@ function ProfessionRow({
         );
       })}
     </tr>
+  );
+}
+
+function CountSpinner({
+  count,
+  onDecrement,
+  onIncrement,
+}: {
+  count: number;
+  onDecrement: () => void;
+  onIncrement: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-px font-mono text-[10px] leading-none">
+      <button
+        type="button"
+        onClick={onDecrement}
+        disabled={count === 0}
+        className="flex h-4 w-4 items-center justify-center rounded text-[var(--color-ash)] transition-colors hover:bg-[var(--color-slate)] hover:text-[var(--color-light)] disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-[var(--color-ash)]"
+      >
+        −
+      </button>
+      <span className={`w-4 text-center tabular-nums ${count > 0 ? "text-[var(--color-cyan)]" : "text-[var(--color-ash)]/40"}`}>
+        {count}
+      </span>
+      <button
+        type="button"
+        onClick={onIncrement}
+        className="flex h-4 w-4 items-center justify-center rounded text-[var(--color-ash)] transition-colors hover:bg-[var(--color-slate)] hover:text-[var(--color-light)]"
+      >
+        +
+      </button>
+    </span>
   );
 }
 
