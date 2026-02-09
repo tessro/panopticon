@@ -10,6 +10,9 @@ export const AU_KM = 149597870.7;
 /** Degrees to radians */
 export const DEG_RAD = Math.PI / 180;
 
+/** Standard gravity in m/s^2 */
+export const STANDARD_GRAVITY_MPS2 = 9.80665;
+
 /** Seconds per Julian year */
 export const SECONDS_PER_YEAR = 365.25 * 86400;
 

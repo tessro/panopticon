@@ -24,7 +24,7 @@ export function TransfersPage() {
       destinationOrbit: destOrbit,
       gameDate,
       gridResolution,
-      launchAcceleration_mps2: launchAcceleration,
+      launchAcceleration_mg: launchAcceleration,
       maxDeltaV_kms: maxDeltaV,
     };
   }, [originOrbit, destOrbit, gameDate, gridResolution, launchAcceleration, maxDeltaV]);

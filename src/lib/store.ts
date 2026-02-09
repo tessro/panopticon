@@ -3,8 +3,8 @@ import { persist } from "zustand/middleware";
 
 const GRID_RESOLUTION_MIN = 20;
 const GRID_RESOLUTION_MAX = 150;
-const LAUNCH_ACCELERATION_MIN = 0;
-const LAUNCH_ACCELERATION_MAX = 50;
+const LAUNCH_ACCELERATION_MG_MIN = 0;
+const LAUNCH_ACCELERATION_MG_MAX = 100000;
 const MAX_DELTA_V_MIN = 0.1;
 const MAX_DELTA_V_MAX = 500;
 
@@ -21,8 +21,8 @@ function clampGridResolution(value: number): number {
 function clampLaunchAcceleration(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(
-    LAUNCH_ACCELERATION_MIN,
-    Math.min(LAUNCH_ACCELERATION_MAX, value),
+    LAUNCH_ACCELERATION_MG_MIN,
+    Math.min(LAUNCH_ACCELERATION_MG_MAX, value),
   );
 }
 
@@ -49,6 +49,7 @@ interface AppState {
   setTransferDestinationOrbit: (orbit: string | null) => void;
   transferGridResolution: number;
   setTransferGridResolution: (resolution: number) => void;
+  /** Launch acceleration in milligees (mG) */
   transferLaunchAcceleration: number;
   setTransferLaunchAcceleration: (acceleration: number) => void;
   transferMaxDeltaV: number;

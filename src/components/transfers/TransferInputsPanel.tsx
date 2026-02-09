@@ -112,13 +112,13 @@ export function TransferInputsPanel({
 
       <div>
         <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
-          Launch Accel (m/s²)
+          Launch Accel (mG)
         </Label>
         <input
           type="number"
           min={0}
-          max={50}
-          step={0.1}
+          max={100000}
+          step={1}
           value={launchAcceleration}
           onChange={(e) => {
             const next = Number.parseFloat(e.target.value);
@@ -129,7 +129,7 @@ export function TransferInputsPanel({
           className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
         />
         <p className="mt-1 font-body text-[10px] text-[var(--color-steel)]">
-          Modeled as a fixed 1-day launch impulse at departure.
+          1 mG = 0.001 g. Modeled as a fixed 1-day launch impulse at departure.
         </p>
       </div>
 

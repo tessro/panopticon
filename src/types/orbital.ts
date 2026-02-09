@@ -54,7 +54,7 @@ export interface TransferInputs {
   destinationOrbit: string;
   gameDate: string;
   gridResolution: number;
-  launchAcceleration_mps2: number;
+  launchAcceleration_mg: number;
   maxDeltaV_kms: number;
 }
 
