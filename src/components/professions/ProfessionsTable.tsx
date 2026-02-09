@@ -141,7 +141,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
               className="relative w-7 min-w-7 max-w-7 p-0 before:pointer-events-none before:absolute before:bottom-0 before:left-0 before:h-full before:rotate-[35deg] before:border-l before:border-[var(--color-slate)] before:origin-bottom-left before:content-['']"
             >
               <div
-                className="flex h-[104px] items-end justify-start"
+                className="flex h-[110px] items-end justify-start"
               >
                 <span
                   className="font-body block -rotate-[55deg] origin-bottom-left ml-[22px] mb-1 whitespace-nowrap text-[10px] leading-none text-[var(--color-ash)] hover:text-[var(--color-light)] cursor-pointer"
