@@ -68,7 +68,7 @@ export function TransfersPage() {
           result={result}
         />
 
-        <div className="flex min-h-[500px] flex-1 items-center justify-center rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/60">
+        <div className="flex h-[600px] flex-1 items-center justify-center rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/60">
           {isComputing ? (
             <div className="font-display text-sm tracking-wider text-[var(--color-ash)] uppercase animate-pulse">
               Solving Lambert transfers…

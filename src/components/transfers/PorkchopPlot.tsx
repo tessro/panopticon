@@ -34,7 +34,7 @@ function PlotContent({
 
   const { grid, minDV, maxDV, optimal } = result;
 
-  // Flatten grid to find date ranges
+  // Compute date ranges and per-cell pixel sizes from the grid
   const { launchRange, arrivalRange, cellWidth, cellHeight } = useMemo(() => {
     let minLaunch = Infinity;
     let maxLaunch = -Infinity;
@@ -54,11 +54,15 @@ function PlotContent({
     const nRows = grid.length;
     const nCols = grid[0]?.length ?? 0;
 
+    // Pad ranges by half a cell so rects are centred on their date values
+    const launchPad = nRows > 1 ? (maxLaunch - minLaunch) / (nRows - 1) / 2 : 1;
+    const arrivalPad = nCols > 1 ? (maxArrival - minArrival) / (nCols - 1) / 2 : 1;
+
     return {
-      launchRange: [minLaunch, maxLaunch] as const,
-      arrivalRange: [minArrival, maxArrival] as const,
-      cellWidth: nCols > 1 ? innerWidth / nCols : innerWidth,
-      cellHeight: nRows > 1 ? innerHeight / nRows : innerHeight,
+      launchRange: [minLaunch - launchPad, maxLaunch + launchPad] as const,
+      arrivalRange: [minArrival - arrivalPad, maxArrival + arrivalPad] as const,
+      cellWidth: nRows > 1 ? innerWidth / nRows : innerWidth,
+      cellHeight: nCols > 1 ? innerHeight / nCols : innerHeight,
     };
   }, [grid, innerWidth, innerHeight]);
 
@@ -123,13 +127,13 @@ function PlotContent({
           {grid.map((row, i) =>
             row.map((cell, j) => {
               if (!cell) return null;
-              const x = (i / grid.length) * innerWidth;
-              const y = innerHeight - ((j + 1) / (row.length)) * innerHeight;
+              const cx = xScale(dayToDate(cell.launchDay));
+              const cy = yScale(dayToDate(cell.arrivalDay));
               return (
                 <rect
                   key={`${i}-${j}`}
-                  x={x}
-                  y={y}
+                  x={cx - cellWidth / 2}
+                  y={cy - cellHeight / 2}
                   width={Math.ceil(cellWidth) + 1}
                   height={Math.ceil(cellHeight) + 1}
                   fill={dvToColor(cell.totalDV)}
