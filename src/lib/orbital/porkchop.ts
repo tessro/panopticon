@@ -88,13 +88,16 @@ function findOrbitBody(
 
 /**
  * Compute synodic period between two planets (in days).
- * Used to determine the search window for the porkchop plot.
+ * Matches Terra Invicta edge-case handling.
  */
 function synodicPeriod(a1_AU: number, a2_AU: number): number {
+  if (a1_AU === a2_AU) return Infinity;
   const T1 = Math.sqrt(a1_AU * a1_AU * a1_AU) * DAYS_PER_YEAR;
   const T2 = Math.sqrt(a2_AU * a2_AU * a2_AU) * DAYS_PER_YEAR;
-  if (Math.abs(T1 - T2) < 1) return 2 * DAYS_PER_YEAR;
-  return Math.abs(T1 * T2 / (T1 - T2));
+  const maxT = Math.max(T1, T2);
+  const cap = maxT * 10;
+  if (Math.abs(T1 - T2) < 1) return cap;
+  return Math.min(Math.abs(T1 * T2 / (T1 - T2)), cap);
 }
 
 /**
