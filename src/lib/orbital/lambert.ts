@@ -157,9 +157,9 @@ export function solveLambert(
     if (Math.abs(dtdz) < 1e-20) {
       // Fall back to bisection
       if (tofCalc > tof) {
-        zLow = z;
-      } else {
         zHigh = z;
+      } else {
+        zLow = z;
       }
       z = (zLow + zHigh) / 2;
       continue;
@@ -168,11 +168,11 @@ export function solveLambert(
     // Newton step with bounds
     const zNew = z - (tofCalc - tof) / dtdz;
 
-    // Update bisection bounds
+    // Update bisection bounds (TOF increases with z)
     if (tofCalc > tof) {
-      zLow = z;
-    } else {
       zHigh = z;
+    } else {
+      zLow = z;
     }
 
     // Use Newton step if within bounds, otherwise bisect

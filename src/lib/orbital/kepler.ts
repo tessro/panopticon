@@ -33,13 +33,15 @@ export function bodyStateAt(body: SpaceBody, t_JY: number): OrbitalState {
   const Omega = body.longAscendingNode_Deg * DEG_RAD;
   const omega = body.argPeriapsis_Deg * DEG_RAD;
   const M0 = body.meanAnomalyAtEpoch_Deg * DEG_RAD;
-  const epoch = body.epoch_floatJYears;
+  // epoch_floatJYears is an absolute Julian year (e.g. 2000 = J2000.0);
+  // t_JY is years since J2000, so convert epoch to the same reference frame
+  const epochJY = body.epoch_floatJYears - 2000;
 
   // Mean motion (rad/yr) = sqrt(GM/a^3) in AU/yr units
   const n = Math.sqrt(GM_SUN_AU / (a * a * a));
 
   // Mean anomaly at time t
-  const M = M0 + n * (t_JY - epoch);
+  const M = M0 + n * (t_JY - epochJY);
 
   // Solve Kepler's equation
   const E = solveKepler(M, e);

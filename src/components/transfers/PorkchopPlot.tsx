@@ -109,7 +109,7 @@ function PlotContent({
     setHoveredCell(null);
   }, []);
 
-  if (grid.length === 0) {
+  if (grid.length === 0 || !isFinite(launchRange[0])) {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="font-display text-sm text-[var(--color-steel)]">
