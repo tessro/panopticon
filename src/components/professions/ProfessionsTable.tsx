@@ -144,7 +144,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
                 className="flex h-[110px] items-end justify-start"
               >
                 <span
-                  className="font-body block -rotate-[55deg] origin-bottom-left ml-[22px] mb-1 whitespace-nowrap px-1 py-2 -my-2 -mx-1 text-[10px] leading-none text-[var(--color-ash)] hover:text-[var(--color-light)] cursor-pointer"
+                  className="font-body block -rotate-[55deg] origin-bottom-left ml-[22px] mb-1 whitespace-nowrap text-[10px] leading-none text-[var(--color-ash)] hover:text-[var(--color-light)] cursor-pointer"
                   onMouseEnter={() => setHoveredMission(m.name)}
                   onMouseLeave={() => setHoveredMission(null)}
                 >
