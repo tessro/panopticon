@@ -95,10 +95,12 @@ echo "Processed space bodies."
 
 # Orbits (filter to planets, dwarf planets, moons, and Lagrange points)
 jq --argjson majorBodies "$(jq '[.[] | select(
-  .objectType == "Planet" or .objectType == "DwarfPlanet" or .objectType == "PlanetaryMoon" or
-  (.dataName | test("L[1-5]$"))
+  .objectType == "Planet" or .objectType == "DwarfPlanet" or .objectType == "PlanetaryMoon"
 ) | .dataName]' "$RAW_DIR/TISpaceBodyTemplate.json")" \
-'[.[] | select(.barycenterName as $b | $majorBodies | index($b)) | {
+'[.[] | select(
+  (.barycenterName as $b | $majorBodies | index($b)) or
+  (.barycenterName | test("L[1-5]$"))
+) | {
   name: .dataName,
   friendlyName: (."friendly name" // .friendlyName // .dataName),
   barycenter: .barycenterName,
