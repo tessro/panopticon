@@ -8,7 +8,7 @@ OUT_DIR="public/data"
 mkdir -p "$RAW_DIR" "$OUT_DIR"
 
 # Copy raw files
-for f in TICouncilorTypeTemplate TIMissionTemplate TIFactionTemplate TITraitTemplate TIFactionIdeologyTemplate; do
+for f in TICouncilorTypeTemplate TIMissionTemplate TIFactionTemplate TITraitTemplate TIFactionIdeologyTemplate TISpaceBodyTemplate TIOrbitTemplate; do
   cp "$GAME_DATA/$f.json" "$RAW_DIR/$f.json"
 done
 
@@ -69,4 +69,46 @@ jq '[.[] | select(.dataName == "Government" or .dataName == "Criminal") | {
 }]' "$RAW_DIR/TITraitTemplate.json" > "$OUT_DIR/traits.json"
 
 echo "Processed traits."
+
+# Space bodies (planets, dwarf planets, major moons with orbital elements)
+jq '[.[] | select(
+  .semiMajorAxis_AU != null and .eccentricity != null and
+  (.objectType == "Planet" or .objectType == "DwarfPlanet" or .objectType == "PlanetaryMoon" or .objectType == "Star")
+) | {
+  name: .dataName,
+  friendlyName: .friendlyName,
+  objectType: .objectType,
+  barycenter: (.barycenterName // null),
+  semiMajorAxis_AU: .semiMajorAxis_AU,
+  semiMajorAxis_km: (if .semiMajorAxis_AU > 0 then (.semiMajorAxis_AU * 149597870.7) else 0 end),
+  eccentricity: .eccentricity,
+  inclination_Deg: (.inclination_Deg // 0),
+  longAscendingNode_Deg: (.longAscendingNode_Deg // 0),
+  argPeriapsis_Deg: (.argPeriapsis_Deg // 0),
+  meanAnomalyAtEpoch_Deg: (.meanAnomalyAtEpoch_Deg // 0),
+  epoch_floatJYears: (.epoch_floatJYears // 2000),
+  mass_kg: (.mass_kg // 0),
+  equatorialRadius_km: (.equatorialRadius_km // 0)
+}]' "$RAW_DIR/TISpaceBodyTemplate.json" > "$OUT_DIR/space-bodies.json"
+
+echo "Processed space bodies."
+
+# Orbits (filter to planets, dwarf planets, moons, and Lagrange points)
+jq --argjson majorBodies "$(jq '[.[] | select(
+  .objectType == "Planet" or .objectType == "DwarfPlanet" or .objectType == "PlanetaryMoon" or
+  (.dataName | test("L[1-5]$"))
+) | .dataName]' "$RAW_DIR/TISpaceBodyTemplate.json")" \
+'[.[] | select(.barycenterName as $b | $majorBodies | index($b)) | {
+  name: .dataName,
+  friendlyName: (."friendly name" // .friendlyName // .dataName),
+  barycenter: .barycenterName,
+  orbitIndex: .orbitIndex,
+  altitude_km: (.altitude_km // null),
+  semiMajorAxis_km: (.semiMajorAxis_km // null),
+  eccentricity: .eccentricity,
+  interfaceOrbit: (.interfaceOrbit // false),
+  mass: (.mass // null)
+}]' "$RAW_DIR/TIOrbitTemplate.json" > "$OUT_DIR/orbits.json"
+
+echo "Processed orbits."
 echo "Done!"
