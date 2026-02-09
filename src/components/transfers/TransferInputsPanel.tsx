@@ -36,6 +36,8 @@ export function TransferInputsPanel({
   const setDestOrbit = useAppStore((s) => s.setTransferDestinationOrbit);
   const gridResolution = useAppStore((s) => s.transferGridResolution);
   const setGridResolution = useAppStore((s) => s.setTransferGridResolution);
+  const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
+  const setLaunchAcceleration = useAppStore((s) => s.setTransferLaunchAcceleration);
   const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
   const setMaxDeltaV = useAppStore((s) => s.setTransferMaxDeltaV);
 
@@ -110,7 +112,30 @@ export function TransferInputsPanel({
 
       <div>
         <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
-          Max Total ΔV (km/s)
+          Launch Accel (mG)
+        </Label>
+        <input
+          type="number"
+          min={0}
+          max={100000}
+          step={1}
+          value={launchAcceleration}
+          onChange={(e) => {
+            const next = Number.parseFloat(e.target.value);
+            if (!Number.isNaN(next)) {
+              setLaunchAcceleration(next);
+            }
+          }}
+          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
+        />
+        <p className="mt-1 font-body text-[10px] text-[var(--color-steel)]">
+          Approximated as a fixed 1-day departure thrust assist.
+        </p>
+      </div>
+
+      <div>
+        <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
+          Max Total ΔV After Assist (km/s)
         </Label>
         <input
           type="number"
@@ -160,15 +185,29 @@ export function TransferInputsPanel({
             </div>
             <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
               <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Departure ΔV</span>
+                <span className="text-[var(--color-ash)]">Departure ΔV (required)</span>
+                <span>{result.optimal.departureDVRaw.toFixed(2)} km/s</span>
+              </div>
+              {result.optimal.launchImpulseDV > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-ash)]">1-day thrust assist</span>
+                  <span>-{result.optimal.launchImpulseDV.toFixed(2)} km/s</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-[var(--color-ash)]">Departure ΔV (after assist)</span>
                 <span>{result.optimal.departureDV.toFixed(2)} km/s</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-ash)]">Arrival ΔV</span>
                 <span>{result.optimal.arrivalDV.toFixed(2)} km/s</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--color-ash)]">Total ΔV (required)</span>
+                <span>{result.optimal.totalDVRaw.toFixed(2)} km/s</span>
+              </div>
               <div className="flex justify-between font-medium text-[var(--color-cyan)]">
-                <span>Total ΔV</span>
+                <span>Total ΔV (after assist)</span>
                 <span>{result.optimal.totalDV.toFixed(2)} km/s</span>
               </div>
             </div>

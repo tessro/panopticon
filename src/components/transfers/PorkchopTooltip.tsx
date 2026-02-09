@@ -27,15 +27,29 @@ export function PorkchopTooltip({ cell }: PorkchopTooltipProps) {
         </div>
         <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
           <div className="flex justify-between gap-4">
-            <span className="text-[var(--color-ash)]">Dep. ΔV</span>
+            <span className="text-[var(--color-ash)]">Dep. ΔV req.</span>
+            <span className="text-[var(--color-fog)]">{cell.departureDVRaw.toFixed(2)} km/s</span>
+          </div>
+          {cell.launchImpulseDV > 0 && (
+            <div className="flex justify-between gap-4">
+              <span className="text-[var(--color-ash)]">1d assist</span>
+              <span className="text-[var(--color-fog)]">-{cell.launchImpulseDV.toFixed(2)} km/s</span>
+            </div>
+          )}
+          <div className="flex justify-between gap-4">
+            <span className="text-[var(--color-ash)]">Dep. ΔV aft.</span>
             <span className="text-[var(--color-fog)]">{cell.departureDV.toFixed(2)} km/s</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-[var(--color-ash)]">Arr. ΔV</span>
             <span className="text-[var(--color-fog)]">{cell.arrivalDV.toFixed(2)} km/s</span>
           </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-[var(--color-ash)]">Total req.</span>
+            <span>{cell.totalDVRaw.toFixed(2)} km/s</span>
+          </div>
           <div className="flex justify-between gap-4 font-medium text-[var(--color-cyan)]">
-            <span>Total ΔV</span>
+            <span>Total aft.</span>
             <span>{cell.totalDV.toFixed(2)} km/s</span>
           </div>
         </div>

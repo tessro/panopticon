@@ -10,6 +10,8 @@ import {
   dateToJY,
   daysToJY,
   DAYS_PER_YEAR,
+  SECONDS_PER_DAY,
+  STANDARD_GRAVITY_MPS2,
 } from "./constants";
 import { bodyStateAt } from "./kepler";
 import { solveLambert } from "./lambert";
@@ -131,6 +133,12 @@ export function computePorkchopGrid(
 
   const clampedResolution = Math.max(20, Math.min(150, Math.floor(inputs.gridResolution)));
   const N = Number.isFinite(clampedResolution) ? clampedResolution : 80;
+  const launchAcceleration_mg = Number.isFinite(inputs.launchAcceleration_mg)
+    ? Math.max(0, inputs.launchAcceleration_mg)
+    : 0;
+  const launchAcceleration_mps2 =
+    (launchAcceleration_mg * STANDARD_GRAVITY_MPS2) / 1000;
+  const launchImpulseDV_kms = (launchAcceleration_mps2 * SECONDS_PER_DAY) / 1000;
   const dvCap =
     Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
       ? inputs.maxDeltaV_kms
@@ -198,6 +206,7 @@ export function computePorkchopGrid(
         destLocalBody,
         originOrbit,
         destOrbit,
+        launchImpulseDV_kms,
       );
 
       if (cell.totalDV > dvCap || !isFinite(cell.totalDV)) {
