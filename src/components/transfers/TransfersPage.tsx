@@ -57,9 +57,9 @@ export function TransfersPage() {
           Transfer Planner
         </h2>
         <p className="font-body mt-1 text-xs text-[var(--color-ash)]">
-          Compute interplanetary transfer windows using Lambert&#39;s problem.
-          Select origin and destination orbits, then compute to generate a
-          porkchop plot.
+          Compute transfer windows with the Terra Invicta two-burn Lambert model.
+          Select origin/destination orbits, set ship acceleration and ΔV cap,
+          then generate a porkchop plot.
         </p>
       </div>
 

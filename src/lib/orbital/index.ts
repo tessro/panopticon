@@ -1,7 +1,16 @@
 export { solveKepler, bodyStateAt } from "./kepler";
 export { solveLambert } from "./lambert";
 export type { LambertResult } from "./lambert";
-export { computeNodeDV, computeCellDV, getParkingRadius } from "./transfer";
+export {
+  TransferOutcome,
+  bestTransferResult,
+  wasBug,
+  tryGetMinimumDVneeded_mps,
+  tryGetMinimumAccelerationNeeded,
+  cartesianToOrbitalElements,
+  solveTwoBurnLambertTransfer,
+  transferSolutionToCell,
+} from "./transfer";
 export { computePorkchopGrid } from "./porkchop";
 export {
   GM_SUN_AU,

@@ -112,7 +112,7 @@ export function TransferInputsPanel({
 
       <div>
         <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
-          Launch Accel (mG)
+          Cruise Accel (mG)
         </Label>
         <input
           type="number"
@@ -129,13 +129,13 @@ export function TransferInputsPanel({
           className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
         />
         <p className="mt-1 font-body text-[10px] text-[var(--color-steel)]">
-          Approximated as a fixed 1-day departure thrust assist.
+          Used as fixed ship acceleration for boost/capture burn duration checks.
         </p>
       </div>
 
       <div>
         <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
-          Max Total ΔV After Assist (km/s)
+          Max Total ΔV (km/s)
         </Label>
         <input
           type="number"
@@ -185,29 +185,27 @@ export function TransferInputsPanel({
             </div>
             <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
               <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Departure ΔV (required)</span>
-                <span>{result.optimal.departureDVRaw.toFixed(2)} km/s</span>
-              </div>
-              {result.optimal.launchImpulseDV > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--color-ash)]">1-day thrust assist</span>
-                  <span>-{result.optimal.launchImpulseDV.toFixed(2)} km/s</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Departure ΔV (after assist)</span>
+                <span className="text-[var(--color-ash)]">Departure ΔV</span>
                 <span>{result.optimal.departureDV.toFixed(2)} km/s</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-ash)]">Arrival ΔV</span>
                 <span>{result.optimal.arrivalDV.toFixed(2)} km/s</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Total ΔV (required)</span>
-                <span>{result.optimal.totalDVRaw.toFixed(2)} km/s</span>
-              </div>
+              {result.optimal.boostBurnDays != null && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-ash)]">Boost Burn</span>
+                  <span>{result.optimal.boostBurnDays.toFixed(1)} days</span>
+                </div>
+              )}
+              {result.optimal.decelBurnDays != null && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-ash)]">Capture Burn</span>
+                  <span>{result.optimal.decelBurnDays.toFixed(1)} days</span>
+                </div>
+              )}
               <div className="flex justify-between font-medium text-[var(--color-cyan)]">
-                <span>Total ΔV (after assist)</span>
+                <span>Total ΔV</span>
                 <span>{result.optimal.totalDV.toFixed(2)} km/s</span>
               </div>
             </div>

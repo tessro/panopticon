@@ -1,21 +1,33 @@
 import type {
-  SpaceBody,
   Orbit,
-  TransferInputs,
+  OrbitalState,
   PorkchopCell,
   PorkchopResult,
+  SpaceBody,
+  TransferInputs,
+  Vec3,
 } from "@/types/orbital";
 import {
-  GM_SUN_AU,
+  AU_KM,
+  DAYS_PER_YEAR,
+  GM_SUN_KM,
+  STANDARD_GRAVITY_MPS2,
   dateToJY,
   daysToJY,
-  DAYS_PER_YEAR,
-  SECONDS_PER_DAY,
-  STANDARD_GRAVITY_MPS2,
 } from "./constants";
 import { bodyStateAt } from "./kepler";
-import { solveLambert } from "./lambert";
-import { computeCellDV } from "./transfer";
+import {
+  TransferOutcome,
+  bestTransferResult,
+  solveTwoBurnLambertTransfer,
+  transferSolutionToCell,
+  type TITransferResult,
+} from "./transfer";
+
+const G_SI = 6.67384e-11;
+const AU_M = AU_KM * 1000;
+const GM_SUN_M3S2 = GM_SUN_KM * 1e9;
+const SUN_MEAN_RADIUS_M = 695_700_000;
 
 function emptyResult(): PorkchopResult {
   return {
@@ -27,85 +39,101 @@ function emptyResult(): PorkchopResult {
     launchStepDays: 0,
     minTransitDays: 0,
     transitStepDays: 0,
+    failureCounts: {},
+    bestFailureOutcome: null,
+    bestFailureValue: 0,
+    bestFailureValue2: 0,
+  };
+}
+
+function vecScale(v: Vec3, s: number): Vec3 {
+  return { x: v.x * s, y: v.y * s, z: v.z * s };
+}
+
+function toSIState(state: OrbitalState): OrbitalState {
+  const posScale = AU_M;
+  const velScale = AU_M / (DAYS_PER_YEAR * 86400);
+  return {
+    pos: vecScale(state.pos, posScale),
+    vel: vecScale(state.vel, velScale),
   };
 }
 
 /**
- * Find the parent body in the solar system hierarchy for an orbit.
- * Orbits around Lagrange points: trace back to the planet's heliocentric orbit.
- * Orbits around moons: trace to the moon's parent planet.
+ * Find the heliocentric body that represents an orbit for interplanetary transfer.
+ * If the orbit is around a moon or L-point, this resolves back to the parent planet.
  */
 function findHeliocentricBody(
   orbit: Orbit,
   bodies: SpaceBody[],
 ): SpaceBody | null {
-  // The orbit's barycenter might be a body or a Lagrange point
   const barycenter = orbit.barycenter;
-
-  // First, try to find the barycenter as a body
   const directBody = bodies.find((b) => b.name === barycenter);
   if (directBody) {
-    // If it's a planet orbiting the Sun, use it directly
     if (directBody.objectType === "Planet" || directBody.objectType === "DwarfPlanet") {
       return directBody;
     }
-    // If it's a moon, find its parent planet
     if (directBody.objectType === "PlanetaryMoon" && directBody.barycenter) {
       const parent = bodies.find((b) => b.name === directBody.barycenter);
       if (parent) return parent;
     }
   }
 
-  // Lagrange points: parse the barycenter name to find the planet
-  // Names like "SunEarthL1", "SunMarsL4", "EarthLunaL2", "JupiterIoL3"
-  // For Sun-Planet Lagrange points, use the planet
-  // For Planet-Moon Lagrange points, use the planet
-  const lMatch = barycenter.match(/^Sun(\w+?)L[1-5]$/);
-  if (lMatch) {
-    const planetName = lMatch[1];
-    return bodies.find((b) => b.name === planetName) ?? null;
+  const sunLag = barycenter.match(/^Sun(\w+?)L[1-5]$/);
+  if (sunLag) {
+    const planet = sunLag[1];
+    return bodies.find((b) => b.name === planet) ?? null;
   }
 
-  // Planet-Moon Lagrange points (e.g., "EarthLunaL2", "JupiterIoL1")
-  const mlMatch = barycenter.match(/^(\w+?)(Luna|Io|Europa|Ganymede|Callisto|Titan|Triton|Ariel|Umbriel|Titania|Oberon|Dione|Enceladus|Tethys|Rhea|Iapetus|Miranda)L[1-5]$/);
-  if (mlMatch) {
-    const planetName = mlMatch[1];
-    return bodies.find((b) => b.name === planetName) ?? null;
+  const moonLag = barycenter.match(/^(\w+?)(Luna|Io|Europa|Ganymede|Callisto|Titan|Triton|Ariel|Umbriel|Titania|Oberon|Dione|Enceladus|Tethys|Rhea|Iapetus|Miranda)L[1-5]$/);
+  if (moonLag) {
+    const planet = moonLag[1];
+    return bodies.find((b) => b.name === planet) ?? null;
   }
 
   return null;
 }
 
-/**
- * Find the immediate parent body for an orbit (for parking orbit dV calc).
- */
-function findOrbitBody(
-  orbit: Orbit,
-  bodies: SpaceBody[],
-): SpaceBody | null {
+function findOrbitBody(orbit: Orbit, bodies: SpaceBody[]): SpaceBody | null {
   return bodies.find((b) => b.name === orbit.barycenter) ?? null;
 }
 
-/**
- * Compute synodic period between two planets (in days).
- * Matches Terra Invicta edge-case handling.
- */
-function synodicPeriod(a1_AU: number, a2_AU: number): number {
-  if (a1_AU === a2_AU) return Infinity;
-  const T1 = Math.sqrt(a1_AU * a1_AU * a1_AU) * DAYS_PER_YEAR;
-  const T2 = Math.sqrt(a2_AU * a2_AU * a2_AU) * DAYS_PER_YEAR;
-  const maxT = Math.max(T1, T2);
-  const cap = maxT * 10;
-  if (Math.abs(T1 - T2) < 1) return cap;
-  return Math.min(Math.abs(T1 * T2 / (T1 - T2)), cap);
+function getOrbitRadiusKm(orbit: Orbit, body: SpaceBody): number {
+  if (orbit.altitude_km != null) return body.equatorialRadius_km + orbit.altitude_km;
+  if (orbit.semiMajorAxis_km != null) return orbit.semiMajorAxis_km;
+  return body.equatorialRadius_km + 200;
 }
 
-/**
- * Compute the porkchop plot grid for an interplanetary transfer.
- *
- * The search window spans one synodic period for launch dates,
- * with transit times from 60 days to half the synodic period.
- */
+function hohmannFirstBurnDV_mps(r1_m: number, r2_m: number, mu: number): number {
+  return Math.abs(Math.sqrt(mu / r1_m) * (Math.sqrt((2 * r2_m) / (r1_m + r2_m)) - 1));
+}
+
+function hohmannDuration_s(r1_m: number, r2_m: number, mu: number): number {
+  const a = (r1_m + r2_m) / 2;
+  return Math.PI * Math.sqrt((a * a * a) / mu);
+}
+
+function circularStateAtTime(
+  radius_m: number,
+  mu_m3s2: number,
+  epoch_s: number,
+  t_s: number,
+): OrbitalState {
+  const n = Math.sqrt(mu_m3s2 / (radius_m * radius_m * radius_m));
+  const theta = n * (t_s - epoch_s);
+  const c = Math.cos(theta);
+  const s = Math.sin(theta);
+  const v = Math.sqrt(mu_m3s2 / radius_m);
+  return {
+    pos: { x: radius_m * c, y: radius_m * s, z: 0 },
+    vel: { x: -v * s, y: v * c, z: 0 },
+  };
+}
+
+function buildFailure(outcome: TransferOutcome, value = 0, value2 = 0): TITransferResult {
+  return { outcome, value, value2 };
+}
+
 export function computePorkchopGrid(
   inputs: TransferInputs,
   bodies: SpaceBody[],
@@ -113,106 +141,145 @@ export function computePorkchopGrid(
 ): PorkchopResult {
   const originOrbit = orbits.find((o) => o.name === inputs.originOrbit);
   const destOrbit = orbits.find((o) => o.name === inputs.destinationOrbit);
-  if (!originOrbit || !destOrbit) {
-    return emptyResult();
-  }
+  if (!originOrbit || !destOrbit) return emptyResult();
 
   const originHelioBody = findHeliocentricBody(originOrbit, bodies);
   const destHelioBody = findHeliocentricBody(destOrbit, bodies);
-  if (!originHelioBody || !destHelioBody) {
-    return emptyResult();
-  }
+  if (!originHelioBody || !destHelioBody) return emptyResult();
 
   const originLocalBody = findOrbitBody(originOrbit, bodies);
   const destLocalBody = findOrbitBody(destOrbit, bodies);
 
   const startDateValue = Date.parse(`${inputs.gameDate}T00:00:00Z`);
-  if (!Number.isFinite(startDateValue)) {
-    return emptyResult();
-  }
+  if (!Number.isFinite(startDateValue)) return emptyResult();
 
-  const clampedResolution = Math.max(20, Math.min(150, Math.floor(inputs.gridResolution)));
-  const N = Number.isFinite(clampedResolution) ? clampedResolution : 80;
+  const N = Math.max(20, Math.min(150, Math.floor(inputs.gridResolution)));
   const launchAcceleration_mg = Number.isFinite(inputs.launchAcceleration_mg)
     ? Math.max(0, inputs.launchAcceleration_mg)
     : 0;
-  const launchAcceleration_mps2 =
+  const fleetAcceleration_mps2 =
     (launchAcceleration_mg * STANDARD_GRAVITY_MPS2) / 1000;
-  const launchImpulseDV_kms = (launchAcceleration_mps2 * SECONDS_PER_DAY) / 1000;
-  const dvCap =
+  const dvCap_kms =
     Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
       ? inputs.maxDeltaV_kms
-      : Infinity;
+      : Number.POSITIVE_INFINITY;
 
-  // Compute search window
+  const samePrimaryBody = originHelioBody.name === destHelioBody.name;
+  const sameLocalBody =
+    originLocalBody !== null &&
+    destLocalBody !== null &&
+    originLocalBody.name === destLocalBody.name;
+  const useLocalCircularModel = samePrimaryBody && sameLocalBody;
+  const localBarycenterBody = useLocalCircularModel ? originLocalBody : null;
+  if (useLocalCircularModel && !localBarycenterBody) {
+    return emptyResult();
+  }
+
+  let barycenterMu_m3s2 = GM_SUN_M3S2;
+  let barycenterMeanRadius_m = SUN_MEAN_RADIUS_M;
+  let originRadius_m = originHelioBody.semiMajorAxis_AU * AU_M;
+  let destinationRadius_m = destHelioBody.semiMajorAxis_AU * AU_M;
+  if (useLocalCircularModel && localBarycenterBody) {
+    barycenterMu_m3s2 = G_SI * localBarycenterBody.mass_kg;
+    barycenterMeanRadius_m = localBarycenterBody.equatorialRadius_km * 1000;
+    originRadius_m = getOrbitRadiusKm(originOrbit, localBarycenterBody) * 1000;
+    destinationRadius_m = getOrbitRadiusKm(destOrbit, localBarycenterBody) * 1000;
+  }
+  const isSunBarycenter = !useLocalCircularModel;
+
+  if (!Number.isFinite(barycenterMu_m3s2) || barycenterMu_m3s2 <= 0) {
+    return emptyResult();
+  }
+
   const startDate = new Date(startDateValue);
   const startJY = dateToJY(startDate);
-  const startDay = startDateValue / 86400000;
+  const startTime_s = startDateValue / 1000;
 
-  const synodic = synodicPeriod(
-    originHelioBody.semiMajorAxis_AU,
-    destHelioBody.semiMajorAxis_AU,
+  const minAllowedDuration_s = hohmannDuration_s(
+    originRadius_m,
+    destinationRadius_m,
+    barycenterMu_m3s2,
   );
+  const firstBurnDuration_s =
+    hohmannFirstBurnDV_mps(originRadius_m, destinationRadius_m, barycenterMu_m3s2) /
+    fleetAcceleration_mps2;
+  const launchOffset_s = Number.isFinite(firstBurnDuration_s)
+    ? firstBurnDuration_s * 0.6
+    : 0;
 
-  // Search over one synodic period for launch dates
-  const launchSpan = Math.min(synodic, 3 * DAYS_PER_YEAR);
-  // Transit times: from 30 days to 80% of the synodic period
-  const minTransit = 30;
-  const maxTransit = Math.min(synodic * 0.8, 3 * DAYS_PER_YEAR);
-
-  const launchStep = N > 1 ? launchSpan / (N - 1) : 0;
-  const transitStep = N > 1 ? (maxTransit - minTransit) / (N - 1) : 0;
+  const launchStep_s = isSunBarycenter ? 864_000 : 43_200;
+  const transitStep_s = isSunBarycenter ? 604_800 : 21_600;
+  const launchStart_s = startTime_s + launchOffset_s;
 
   const grid: (PorkchopCell | null)[][] = [];
-  let minDV = Infinity;
+  let minDV = Number.POSITIVE_INFINITY;
   let maxDV = 0;
   let optimal: PorkchopCell | null = null;
 
+  const failureCounts: Record<number, number> = {};
+  let bestFailure: TITransferResult | null = null;
+
   for (let i = 0; i < N; i++) {
     const row: (PorkchopCell | null)[] = [];
-    const launchDay = startDay + i * launchStep;
-    const launchJY = startJY + daysToJY(i * launchStep);
-
-    const originState = bodyStateAt(originHelioBody, launchJY);
+    const launchTime_s = launchStart_s + i * launchStep_s;
 
     for (let j = 0; j < N; j++) {
-      const transit = minTransit + j * transitStep;
-      const arrivalDay = launchDay + transit;
-      const arrivalJY = launchJY + daysToJY(transit);
+      const transitDuration_s = minAllowedDuration_s + j * transitStep_s;
+      const arrivalTime_s = launchTime_s + transitDuration_s;
 
-      const destState = bodyStateAt(destHelioBody, arrivalJY);
+      const sourceState_m = useLocalCircularModel
+        ? circularStateAtTime(originRadius_m, barycenterMu_m3s2, startTime_s, launchTime_s)
+        : toSIState(bodyStateAt(originHelioBody, startJY + daysToJY((launchTime_s - startTime_s) / 86400)));
+      const destinationState_m = useLocalCircularModel
+        ? circularStateAtTime(destinationRadius_m, barycenterMu_m3s2, startTime_s, arrivalTime_s)
+        : toSIState(bodyStateAt(destHelioBody, startJY + daysToJY((arrivalTime_s - startTime_s) / 86400)));
 
-      const tofYears = daysToJY(transit);
-      const result = solveLambert(
-        originState.pos,
-        destState.pos,
-        tofYears,
-        GM_SUN_AU,
-      );
+      const solution = solveTwoBurnLambertTransfer({
+        launchTime_s,
+        arrivalTime_s,
+        sourceState_m,
+        destinationState_m,
+        barycenterMu_m3s2,
+        barycenterMeanRadius_m,
+        fleetAcceleration_mps2,
+      });
 
-      if (!result) {
+      let evaluation: TITransferResult = solution.result;
+
+      if (evaluation.outcome === TransferOutcome.Success) {
+        if (solution.launchTime_s < startTime_s) {
+          evaluation = buildFailure(
+            TransferOutcome.Fail_LaunchInPast,
+            startTime_s - solution.launchTime_s,
+            transitDuration_s,
+          );
+        } else if (solution.totalDV_mps / 1000 > dvCap_kms) {
+          evaluation = buildFailure(
+            TransferOutcome.Fail_InsufficientDV,
+            solution.totalDV_mps,
+            0,
+          );
+        } else if (
+          solution.transferOrbit &&
+          solution.transferOrbit.eccentricity >= 1
+        ) {
+          evaluation = buildFailure(
+            TransferOutcome.Fail_Hyperbolic,
+            solution.transferOrbit.eccentricity,
+            0,
+          );
+        }
+      }
+
+      if (evaluation.outcome !== TransferOutcome.Success) {
+        failureCounts[evaluation.outcome] = (failureCounts[evaluation.outcome] ?? 0) + 1;
+        bestFailure = bestTransferResult(bestFailure, evaluation, fleetAcceleration_mps2);
         row.push(null);
         continue;
       }
 
-      const cell = computeCellDV(
-        result.v1,
-        result.v2,
-        originState.vel,
-        destState.vel,
-        launchDay,
-        arrivalDay,
-        originLocalBody,
-        destLocalBody,
-        originOrbit,
-        destOrbit,
-        launchImpulseDV_kms,
-      );
-
-      if (cell.totalDV > dvCap || !isFinite(cell.totalDV)) {
-        row.push(null);
-        continue;
-      }
+      const cell = transferSolutionToCell(solution);
+      row.push(cell);
 
       if (cell.totalDV < minDV) {
         minDV = cell.totalDV;
@@ -221,22 +288,25 @@ export function computePorkchopGrid(
       if (cell.totalDV > maxDV) {
         maxDV = cell.totalDV;
       }
-
-      row.push(cell);
     }
+
     grid.push(row);
   }
 
-  if (minDV === Infinity) minDV = 0;
+  if (!Number.isFinite(minDV)) minDV = 0;
 
   return {
     grid,
     minDV,
     maxDV,
     optimal,
-    launchStartDay: startDay,
-    launchStepDays: launchStep,
-    minTransitDays: minTransit,
-    transitStepDays: transitStep,
+    launchStartDay: launchStart_s / 86400,
+    launchStepDays: launchStep_s / 86400,
+    minTransitDays: minAllowedDuration_s / 86400,
+    transitStepDays: transitStep_s / 86400,
+    failureCounts,
+    bestFailureOutcome: bestFailure?.outcome ?? null,
+    bestFailureValue: bestFailure?.value ?? 0,
+    bestFailureValue2: bestFailure?.value2 ?? 0,
   };
 }

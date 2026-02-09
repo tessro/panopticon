@@ -13,6 +13,24 @@ interface PorkchopPlotProps {
 
 const MARGIN = { top: 20, right: 20, bottom: 60, left: 80 };
 
+function transferOutcomeLabel(outcome: number | null | undefined): string | null {
+  if (outcome == null) return null;
+  const labels: Record<number, string> = {
+    1: "Insufficient ΔV",
+    2: "Arrival Before Launch",
+    3: "Launch In Past",
+    5: "Parabolic Transfer",
+    6: "Hyperbolic Transfer",
+    8: "Insufficient Acceleration",
+    9: "Orbit Period Too Long",
+    11: "Burn Longer Than Transfer",
+    13: "Burn NaN",
+    14: "Would Collide With Body",
+    19: "Solver Code Path",
+  };
+  return labels[outcome] ?? `Failure ${outcome}`;
+}
+
 function dayToDate(day: number): Date {
   return new Date(day * 86400000);
 }
@@ -123,11 +141,19 @@ function PlotContent({
   }, []);
 
   if (!hasGeometry || !hasAnyValidCell || plotSize <= 0) {
+    const failure = transferOutcomeLabel(result.bestFailureOutcome);
     return (
       <div className="flex h-full items-center justify-center">
-        <span className="font-display text-sm text-[var(--color-steel)]">
-          No valid transfers found
-        </span>
+        <div className="text-center">
+          <span className="font-display block text-sm text-[var(--color-steel)]">
+            No valid transfers found
+          </span>
+          {failure && (
+            <span className="font-body mt-1 block text-xs text-[var(--color-ash)]">
+              Most likely failure: {failure}
+            </span>
+          )}
+        </div>
       </div>
     );
   }

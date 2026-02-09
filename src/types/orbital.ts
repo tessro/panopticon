@@ -48,6 +48,11 @@ export interface PorkchopCell {
   totalDVRaw: number;
   totalDV: number;
   transitDays: number;
+  outcome?: number;
+  outcomeValue?: number;
+  outcomeValue2?: number;
+  boostBurnDays?: number;
+  decelBurnDays?: number;
 }
 
 export interface TransferInputs {
@@ -68,4 +73,8 @@ export interface PorkchopResult {
   launchStepDays: number;
   minTransitDays: number;
   transitStepDays: number;
+  failureCounts?: Record<number, number>;
+  bestFailureOutcome?: number | null;
+  bestFailureValue?: number;
+  bestFailureValue2?: number;
 }
