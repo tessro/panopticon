@@ -29,8 +29,11 @@ function PlotContent({
   const [hoveredCell, setHoveredCell] = useState<PorkchopCell | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const innerWidth = width - MARGIN.left - MARGIN.right;
-  const innerHeight = height - MARGIN.top - MARGIN.bottom;
+  const availableWidth = width - MARGIN.left - MARGIN.right;
+  const availableHeight = height - MARGIN.top - MARGIN.bottom;
+  const plotSize = Math.min(availableWidth, availableHeight);
+  const plotOffsetX = MARGIN.left + Math.max(0, (availableWidth - plotSize) / 2);
+  const plotOffsetY = MARGIN.top + Math.max(0, (availableHeight - plotSize) / 2);
 
   const { grid, minDV, maxDV, optimal } = result;
   const nRows = grid.length;
@@ -80,18 +83,18 @@ function PlotContent({
     () =>
       scaleUtc({
         domain: [dayToDate(launchRange[0]), dayToDate(launchRange[1])],
-        range: [0, innerWidth],
+        range: [0, plotSize],
       }),
-    [launchRange, innerWidth],
+    [launchRange, plotSize],
   );
 
   const yScale = useMemo(
     () =>
       scaleUtc({
         domain: [dayToDate(arrivalRange[0]), dayToDate(arrivalRange[1])],
-        range: [innerHeight, 0],
+        range: [plotSize, 0],
       }),
-    [arrivalRange, innerHeight],
+    [arrivalRange, plotSize],
   );
 
   // Color scale: map dV to color using d3-scale-chromatic turbo
@@ -119,7 +122,7 @@ function PlotContent({
     setHoveredCell(null);
   }, []);
 
-  if (!hasGeometry || !hasAnyValidCell) {
+  if (!hasGeometry || !hasAnyValidCell || plotSize <= 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="font-display text-sm text-[var(--color-steel)]">
@@ -132,7 +135,7 @@ function PlotContent({
   return (
     <div className="relative h-full w-full">
       <svg width={width} height={height}>
-        <Group left={MARGIN.left} top={MARGIN.top}>
+        <Group left={plotOffsetX} top={plotOffsetY}>
           {/* Grid cells */}
           {grid.map((row, i) =>
             row.map((cell, j) => {
@@ -181,7 +184,7 @@ function PlotContent({
 
           {/* Axes */}
           <AxisBottom
-            top={innerHeight}
+            top={plotSize}
             scale={xScale}
             numTicks={6}
             tickLabelProps={{
