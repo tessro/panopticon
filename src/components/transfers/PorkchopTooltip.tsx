@@ -27,17 +27,7 @@ export function PorkchopTooltip({ cell }: PorkchopTooltipProps) {
         </div>
         <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
           <div className="flex justify-between gap-4">
-            <span className="text-[var(--color-ash)]">Dep. ΔV (raw)</span>
-            <span className="text-[var(--color-fog)]">{cell.departureDVRaw.toFixed(2)} km/s</span>
-          </div>
-          {cell.launchImpulseDV > 0 && (
-            <div className="flex justify-between gap-4">
-              <span className="text-[var(--color-ash)]">Launch impulse</span>
-              <span className="text-[var(--color-fog)]">-{cell.launchImpulseDV.toFixed(2)} km/s</span>
-            </div>
-          )}
-          <div className="flex justify-between gap-4">
-            <span className="text-[var(--color-ash)]">Dep. ΔV (net)</span>
+            <span className="text-[var(--color-ash)]">Dep. ΔV</span>
             <span className="text-[var(--color-fog)]">{cell.departureDV.toFixed(2)} km/s</span>
           </div>
           <div className="flex justify-between gap-4">

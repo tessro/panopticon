@@ -41,8 +41,6 @@ export interface OrbitalState {
 export interface PorkchopCell {
   launchDay: number;
   arrivalDay: number;
-  departureDVRaw: number;
-  launchImpulseDV: number;
   departureDV: number;
   arrivalDV: number;
   totalDV: number;
@@ -54,7 +52,6 @@ export interface TransferInputs {
   destinationOrbit: string;
   gameDate: string;
   gridResolution: number;
-  launchAcceleration_mg: number;
   maxDeltaV_kms: number;
 }
 
