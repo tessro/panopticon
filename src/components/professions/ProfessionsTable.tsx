@@ -144,7 +144,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
                 className="flex h-[110px] items-end justify-start"
               >
                 <span
-                  className="font-body block -rotate-[55deg] origin-bottom-left ml-[22px] mb-1 whitespace-nowrap text-[10px] leading-none text-[var(--color-ash)] hover:text-[var(--color-light)] cursor-pointer"
+                  className="font-body block -rotate-[55deg] origin-bottom-left ml-[22px] mb-1 whitespace-nowrap px-1 py-2 -my-2 -mx-1 text-[10px] leading-none text-[var(--color-ash)] hover:text-[var(--color-light)] cursor-pointer"
                   onMouseEnter={() => setHoveredMission(m.name)}
                   onMouseLeave={() => setHoveredMission(null)}
                 >
@@ -207,6 +207,7 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
               hoveredMission={hoveredMission}
               professionCounts={professionCounts}
               onSetCount={handleSetCount}
+              onHoverMission={setHoveredMission}
             />
           );
         })}
@@ -227,6 +228,8 @@ export function ProfessionsTable({ councilorTypes, missions, traits }: Props) {
                 <td
                   key={m.name}
                   className={`px-0 py-1 text-center font-mono text-[11px] font-medium ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""} ${isHoveredCol ? "bg-[var(--color-cyan)]/10" : ""} ${total > 0 ? "text-[var(--color-cyan)]" : "text-[var(--color-ash)]/30"}`}
+                  onMouseEnter={() => setHoveredMission(m.name)}
+                  onMouseLeave={() => setHoveredMission(null)}
                 >
                   {total > 0 ? total : ""}
                 </td>
@@ -250,6 +253,7 @@ function ProfessionGroup({
   hoveredMission,
   professionCounts,
   onSetCount,
+  onHoverMission,
 }: {
   statGroup: string;
   professions: CouncilorType[];
@@ -261,6 +265,7 @@ function ProfessionGroup({
   hoveredMission: string | null;
   professionCounts: Record<string, number>;
   onSetCount: (name: string, count: number) => void;
+  onHoverMission: (name: string | null) => void;
 }) {
   const abbrev = STAT_ABBREV[statGroup as keyof typeof STAT_ABBREV] ?? statGroup;
 
@@ -286,6 +291,7 @@ function ProfessionGroup({
           hoveredMission={hoveredMission}
           count={professionCounts[ct.name] ?? 0}
           onSetCount={onSetCount}
+          onHoverMission={onHoverMission}
         />
       ))}
     </>
@@ -301,6 +307,7 @@ function ProfessionRow({
   hoveredMission,
   count,
   onSetCount,
+  onHoverMission,
 }: {
   ct: CouncilorType;
   orderedMissions: Mission[];
@@ -310,6 +317,7 @@ function ProfessionRow({
   hoveredMission: string | null;
   count: number;
   onSetCount: (name: string, count: number) => void;
+  onHoverMission: (name: string | null) => void;
 }) {
   const affinity = getAffinityStatus(ct, selectedFaction);
   const cost = getHireCost(affinity);
@@ -319,10 +327,11 @@ function ProfessionRow({
   const secondaryStat = ct.secondaryStat;
   const missionHighlight =
     hoveredMission && ct.missions.includes(hoveredMission);
-  const nameClass = getNameCellClass(affinity, !!missionHighlight);
+  const isSelected = count > 0;
+  const nameClass = getNameCellClass(affinity, !!missionHighlight, isSelected);
 
   return (
-    <tr className={`group/row border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""}`}>
+    <tr className={`group/row border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""} ${isSelected ? "bg-[var(--color-cyan)]/5" : ""}`}>
       {/* Profession name + count spinner */}
       <td
         className={`sticky left-0 z-10 px-2 py-1 font-display text-xs font-medium tracking-wide ${nameClass}`}
@@ -377,6 +386,8 @@ function ProfessionRow({
           <td
             key={m.name}
             className={`px-0 py-1 text-center ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""} ${isHoveredCol ? "bg-[var(--color-cyan)]/10" : ""}`}
+            onMouseEnter={() => onHoverMission(m.name)}
+            onMouseLeave={() => onHoverMission(null)}
           >
             {has && (
               <span className="font-mono text-[11px] font-medium text-[var(--color-cyan)]">
@@ -423,7 +434,7 @@ function CountSpinner({
   );
 }
 
-function getNameCellClass(affinity: AffinityStatus, missionHighlight: boolean): string {
+function getNameCellClass(affinity: AffinityStatus, missionHighlight: boolean, isSelected: boolean): string {
   switch (affinity) {
     case "good":
       return "bg-[var(--color-good-dim)] text-[var(--color-good)]";
@@ -432,6 +443,9 @@ function getNameCellClass(affinity: AffinityStatus, missionHighlight: boolean): 
     case "ban":
       return "bg-[var(--color-bad-dim)] text-[var(--color-ban)]";
     default:
+      if (isSelected) {
+        return "bg-[var(--color-deep)] text-[var(--color-light)] group-hover/row:bg-[var(--color-deep)]";
+      }
       return `${missionHighlight ? "bg-[var(--color-deep)]" : "bg-[var(--color-abyss)]"} text-[var(--color-fog)] group-hover/row:bg-[var(--color-deep)]`;
   }
 }
