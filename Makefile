@@ -1,7 +1,10 @@
-.PHONY: data clean dev build
+.PHONY: data disasm clean dev build
 
 data:
 	bash scripts/preprocess.sh
+
+disasm:
+	bash scripts/disassemble.sh
 
 dev:
 	pnpm dev
