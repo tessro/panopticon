@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { ParentSize } from "@visx/responsive";
-import { scaleTime } from "@visx/scale";
+import { scaleUtc } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { Group } from "@visx/group";
 import { interpolateTurbo } from "d3-scale-chromatic";
@@ -33,42 +33,52 @@ function PlotContent({
   const innerHeight = height - MARGIN.top - MARGIN.bottom;
 
   const { grid, minDV, maxDV, optimal } = result;
+  const nRows = grid.length;
+  const nCols = grid[0]?.length ?? 0;
 
-  // Compute date ranges and per-cell pixel sizes from the grid
-  const { launchRange, arrivalRange, cellWidth, cellHeight } = useMemo(() => {
-    let minLaunch = Infinity;
-    let maxLaunch = -Infinity;
-    let minArrival = Infinity;
-    let maxArrival = -Infinity;
+  const {
+    launchRange,
+    arrivalRange,
+    launchStepDays,
+    transitStepDays,
+    hasAnyValidCell,
+    hasGeometry,
+  } = useMemo(() => {
+    const validLaunchStep = result.launchStepDays > 0 ? result.launchStepDays : 1;
+    const validTransitStep = result.transitStepDays > 0 ? result.transitStepDays : 1;
 
-    for (const row of grid) {
-      for (const cell of row) {
-        if (!cell) continue;
-        if (cell.launchDay < minLaunch) minLaunch = cell.launchDay;
-        if (cell.launchDay > maxLaunch) maxLaunch = cell.launchDay;
-        if (cell.arrivalDay < minArrival) minArrival = cell.arrivalDay;
-        if (cell.arrivalDay > maxArrival) maxArrival = cell.arrivalDay;
-      }
-    }
+    const minLaunch = result.launchStartDay - validLaunchStep / 2;
+    const maxLaunch =
+      result.launchStartDay + (Math.max(nRows, 1) - 1) * validLaunchStep + validLaunchStep / 2;
 
-    const nRows = grid.length;
-    const nCols = grid[0]?.length ?? 0;
+    const minTransit = result.minTransitDays - validTransitStep / 2;
+    const maxTransit =
+      result.minTransitDays +
+      (Math.max(nCols, 1) - 1) * validTransitStep +
+      validTransitStep / 2;
 
-    // Pad ranges by half a cell so rects are centred on their date values
-    const launchPad = nRows > 1 ? (maxLaunch - minLaunch) / (nRows - 1) / 2 : 1;
-    const arrivalPad = nCols > 1 ? (maxArrival - minArrival) / (nCols - 1) / 2 : 1;
+    const hasAnyCell = grid.some((row) => row.some((cell) => cell !== null));
+    const geometryOk =
+      nRows > 0 &&
+      nCols > 0 &&
+      Number.isFinite(minLaunch) &&
+      Number.isFinite(maxLaunch) &&
+      Number.isFinite(minTransit) &&
+      Number.isFinite(maxTransit);
 
     return {
-      launchRange: [minLaunch - launchPad, maxLaunch + launchPad] as const,
-      arrivalRange: [minArrival - arrivalPad, maxArrival + arrivalPad] as const,
-      cellWidth: nRows > 1 ? innerWidth / nRows : innerWidth,
-      cellHeight: nCols > 1 ? innerHeight / nCols : innerHeight,
+      launchRange: [minLaunch, maxLaunch] as const,
+      arrivalRange: [minLaunch + minTransit, maxLaunch + maxTransit] as const,
+      launchStepDays: validLaunchStep,
+      transitStepDays: validTransitStep,
+      hasAnyValidCell: hasAnyCell,
+      hasGeometry: geometryOk,
     };
-  }, [grid, innerWidth, innerHeight]);
+  }, [grid, nCols, nRows, result]);
 
   const xScale = useMemo(
     () =>
-      scaleTime({
+      scaleUtc({
         domain: [dayToDate(launchRange[0]), dayToDate(launchRange[1])],
         range: [0, innerWidth],
       }),
@@ -77,7 +87,7 @@ function PlotContent({
 
   const yScale = useMemo(
     () =>
-      scaleTime({
+      scaleUtc({
         domain: [dayToDate(arrivalRange[0]), dayToDate(arrivalRange[1])],
         range: [innerHeight, 0],
       }),
@@ -98,7 +108,7 @@ function PlotContent({
   }, [minDV, maxDV]);
 
   const handleMouseMove = useCallback(
-    (e: React.MouseEvent<SVGRectElement>, cell: PorkchopCell) => {
+    (e: React.MouseEvent<SVGPolygonElement>, cell: PorkchopCell) => {
       setHoveredCell(cell);
       setMousePos({ x: e.clientX, y: e.clientY });
     },
@@ -109,7 +119,7 @@ function PlotContent({
     setHoveredCell(null);
   }, []);
 
-  if (grid.length === 0 || !isFinite(launchRange[0])) {
+  if (!hasGeometry || !hasAnyValidCell) {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="font-display text-sm text-[var(--color-steel)]">
@@ -127,15 +137,27 @@ function PlotContent({
           {grid.map((row, i) =>
             row.map((cell, j) => {
               if (!cell) return null;
-              const cx = xScale(dayToDate(cell.launchDay));
-              const cy = yScale(dayToDate(cell.arrivalDay));
+              const launch = result.launchStartDay + i * launchStepDays;
+              const transit = result.minTransitDays + j * transitStepDays;
+
+              const launchMin = launch - launchStepDays / 2;
+              const launchMax = launch + launchStepDays / 2;
+              const transitMin = transit - transitStepDays / 2;
+              const transitMax = transit + transitStepDays / 2;
+
+              const p1x = xScale(dayToDate(launchMin));
+              const p1y = yScale(dayToDate(launchMin + transitMin));
+              const p2x = xScale(dayToDate(launchMax));
+              const p2y = yScale(dayToDate(launchMax + transitMin));
+              const p3x = xScale(dayToDate(launchMax));
+              const p3y = yScale(dayToDate(launchMax + transitMax));
+              const p4x = xScale(dayToDate(launchMin));
+              const p4y = yScale(dayToDate(launchMin + transitMax));
+
               return (
-                <rect
+                <polygon
                   key={`${i}-${j}`}
-                  x={cx - cellWidth / 2}
-                  y={cy - cellHeight / 2}
-                  width={Math.ceil(cellWidth) + 1}
-                  height={Math.ceil(cellHeight) + 1}
+                  points={`${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y} ${p4x},${p4y}`}
                   fill={dvToColor(cell.totalDV)}
                   opacity={0.85}
                   onMouseMove={(e) => handleMouseMove(e, cell)}

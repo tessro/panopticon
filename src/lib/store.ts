@@ -1,6 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+const GRID_RESOLUTION_MIN = 20;
+const GRID_RESOLUTION_MAX = 150;
+
+function isValidDateInput(value: string): boolean {
+  return Number.isFinite(Date.parse(`${value}T00:00:00Z`));
+}
+
+function clampGridResolution(value: number): number {
+  if (!Number.isFinite(value)) return 80;
+  const normalized = Math.floor(value);
+  return Math.max(GRID_RESOLUTION_MIN, Math.min(GRID_RESOLUTION_MAX, normalized));
+}
+
 interface AppState {
   /** Currently selected faction ideology (lowercase), or null */
   selectedFaction: string | null;
@@ -37,7 +50,10 @@ export const useAppStore = create<AppState>()(
         })),
 
       transferGameDate: "2022-01-01",
-      setTransferGameDate: (date) => set({ transferGameDate: date }),
+      setTransferGameDate: (date) => {
+        if (!isValidDateInput(date)) return;
+        set({ transferGameDate: date });
+      },
       transferOriginOrbit: null,
       setTransferOriginOrbit: (orbit) => set({ transferOriginOrbit: orbit }),
       transferDestinationOrbit: null,
@@ -45,7 +61,7 @@ export const useAppStore = create<AppState>()(
         set({ transferDestinationOrbit: orbit }),
       transferGridResolution: 80,
       setTransferGridResolution: (resolution) =>
-        set({ transferGridResolution: resolution }),
+        set({ transferGridResolution: clampGridResolution(resolution) }),
     }),
     { name: "panopticon-app" },
   ),

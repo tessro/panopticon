@@ -10,6 +10,19 @@ import { bodyStateAt } from "./kepler";
 import { solveLambert } from "./lambert";
 import { computeCellDV } from "./transfer";
 
+function emptyResult(): PorkchopResult {
+  return {
+    grid: [],
+    minDV: 0,
+    maxDV: 0,
+    optimal: null,
+    launchStartDay: 0,
+    launchStepDays: 0,
+    minTransitDays: 0,
+    transitStepDays: 0,
+  };
+}
+
 /**
  * Find the parent body in the solar system hierarchy for an orbit.
  * Orbits around Lagrange points: trace back to the planet's heliocentric orbit.
@@ -91,22 +104,30 @@ export function computePorkchopGrid(
   const originOrbit = orbits.find((o) => o.name === inputs.originOrbit);
   const destOrbit = orbits.find((o) => o.name === inputs.destinationOrbit);
   if (!originOrbit || !destOrbit) {
-    return { grid: [], minDV: 0, maxDV: 0, optimal: null };
+    return emptyResult();
   }
 
   const originHelioBody = findHeliocentricBody(originOrbit, bodies);
   const destHelioBody = findHeliocentricBody(destOrbit, bodies);
   if (!originHelioBody || !destHelioBody) {
-    return { grid: [], minDV: 0, maxDV: 0, optimal: null };
+    return emptyResult();
   }
 
   const originLocalBody = findOrbitBody(originOrbit, bodies);
   const destLocalBody = findOrbitBody(destOrbit, bodies);
 
+  const startDateValue = Date.parse(`${inputs.gameDate}T00:00:00Z`);
+  if (!Number.isFinite(startDateValue)) {
+    return emptyResult();
+  }
+
+  const clampedResolution = Math.max(20, Math.min(150, Math.floor(inputs.gridResolution)));
+  const N = Number.isFinite(clampedResolution) ? clampedResolution : 80;
+
   // Compute search window
-  const startDate = new Date(inputs.gameDate);
+  const startDate = new Date(startDateValue);
   const startJY = dateToJY(startDate);
-  const startDay = startDate.getTime() / 86400000;
+  const startDay = startDateValue / 86400000;
 
   const synodic = synodicPeriod(
     originHelioBody.semiMajorAxis_AU,
@@ -119,9 +140,8 @@ export function computePorkchopGrid(
   const minTransit = 30;
   const maxTransit = Math.min(synodic * 0.8, 3 * DAYS_PER_YEAR);
 
-  const N = inputs.gridResolution;
-  const launchStep = launchSpan / (N - 1);
-  const transitStep = (maxTransit - minTransit) / (N - 1);
+  const launchStep = N > 1 ? launchSpan / (N - 1) : 0;
+  const transitStep = N > 1 ? (maxTransit - minTransit) / (N - 1) : 0;
 
   const grid: (PorkchopCell | null)[][] = [];
   let minDV = Infinity;
@@ -191,5 +211,14 @@ export function computePorkchopGrid(
 
   if (minDV === Infinity) minDV = 0;
 
-  return { grid, minDV, maxDV, optimal };
+  return {
+    grid,
+    minDV,
+    maxDV,
+    optimal,
+    launchStartDay: startDay,
+    launchStepDays: launchStep,
+    minTransitDays: minTransit,
+    transitStepDays: transitStep,
+  };
 }

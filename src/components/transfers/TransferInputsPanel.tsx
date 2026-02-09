@@ -12,6 +12,10 @@ interface TransferInputsPanelProps {
   result: PorkchopResult | null;
 }
 
+function isValidGameDate(value: string): boolean {
+  return Number.isFinite(Date.parse(`${value}T00:00:00Z`));
+}
+
 function formatDate(dayTimestamp: number): string {
   const date = new Date(dayTimestamp * 86400000);
   return date.toISOString().split("T")[0] ?? "";
@@ -33,7 +37,14 @@ export function TransferInputsPanel({
   const gridResolution = useAppStore((s) => s.transferGridResolution);
   const setGridResolution = useAppStore((s) => s.setTransferGridResolution);
 
-  const canCompute = originOrbit && destOrbit && originOrbit !== destOrbit && !isComputing;
+  const hasValidDate = isValidGameDate(gameDate);
+  const canCompute = Boolean(
+    originOrbit &&
+    destOrbit &&
+    originOrbit !== destOrbit &&
+    hasValidDate &&
+    !isComputing,
+  );
 
   return (
     <div className="flex w-80 shrink-0 flex-col gap-4">
@@ -85,7 +96,12 @@ export function TransferInputsPanel({
           max={150}
           step={10}
           value={gridResolution}
-          onChange={(e) => setGridResolution(Number(e.target.value))}
+          onChange={(e) => {
+            const next = Number.parseInt(e.target.value, 10);
+            if (!Number.isNaN(next)) {
+              setGridResolution(next);
+            }
+          }}
           className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
         />
       </div>

@@ -59,4 +59,8 @@ export interface PorkchopResult {
   minDV: number;
   maxDV: number;
   optimal: PorkchopCell | null;
+  launchStartDay: number;
+  launchStepDays: number;
+  minTransitDays: number;
+  transitStepDays: number;
 }
