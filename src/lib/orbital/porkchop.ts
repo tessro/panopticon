@@ -5,7 +5,13 @@ import type {
   PorkchopCell,
   PorkchopResult,
 } from "@/types/orbital";
-import { GM_SUN_AU, dateToJY, daysToJY, DAYS_PER_YEAR } from "./constants";
+import {
+  GM_SUN_AU,
+  dateToJY,
+  daysToJY,
+  DAYS_PER_YEAR,
+  SECONDS_PER_DAY,
+} from "./constants";
 import { bodyStateAt } from "./kepler";
 import { solveLambert } from "./lambert";
 import { computeCellDV } from "./transfer";
@@ -123,6 +129,14 @@ export function computePorkchopGrid(
 
   const clampedResolution = Math.max(20, Math.min(150, Math.floor(inputs.gridResolution)));
   const N = Number.isFinite(clampedResolution) ? clampedResolution : 80;
+  const launchAcceleration_mps2 = Number.isFinite(inputs.launchAcceleration_mps2)
+    ? Math.max(0, inputs.launchAcceleration_mps2)
+    : 0;
+  const launchImpulseDV_kms = (launchAcceleration_mps2 * SECONDS_PER_DAY) / 1000;
+  const dvCap =
+    Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
+      ? inputs.maxDeltaV_kms
+      : Infinity;
 
   // Compute search window
   const startDate = new Date(startDateValue);
@@ -147,9 +161,6 @@ export function computePorkchopGrid(
   let minDV = Infinity;
   let maxDV = 0;
   let optimal: PorkchopCell | null = null;
-
-  // DV cap: ignore solutions above this
-  const dvCap = 50;
 
   for (let i = 0; i < N; i++) {
     const row: (PorkchopCell | null)[] = [];
@@ -189,6 +200,7 @@ export function computePorkchopGrid(
         destLocalBody,
         originOrbit,
         destOrbit,
+        launchImpulseDV_kms,
       );
 
       if (cell.totalDV > dvCap || !isFinite(cell.totalDV)) {

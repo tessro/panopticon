@@ -14,6 +14,8 @@ export function TransfersPage() {
   const destOrbit = useAppStore((s) => s.transferDestinationOrbit);
   const gameDate = useAppStore((s) => s.transferGameDate);
   const gridResolution = useAppStore((s) => s.transferGridResolution);
+  const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
+  const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
 
   const inputs = useMemo<TransferInputs | null>(() => {
     if (!originOrbit || !destOrbit) return null;
@@ -22,8 +24,10 @@ export function TransfersPage() {
       destinationOrbit: destOrbit,
       gameDate,
       gridResolution,
+      launchAcceleration_mps2: launchAcceleration,
+      maxDeltaV_kms: maxDeltaV,
     };
-  }, [originOrbit, destOrbit, gameDate, gridResolution]);
+  }, [originOrbit, destOrbit, gameDate, gridResolution, launchAcceleration, maxDeltaV]);
 
   const { result, isComputing, compute } = usePorkchop(
     inputs,

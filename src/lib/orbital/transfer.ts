@@ -69,6 +69,7 @@ export function computeCellDV(
   destBody: SpaceBody | null,
   originOrbit: Orbit,
   destOrbit: Orbit,
+  launchImpulseDV_kms = 0,
 ): PorkchopCell {
   // Convert velocity differences to km/s
   const auYrToKms = AU_KM / SECONDS_PER_YEAR;
@@ -79,15 +80,15 @@ export function computeCellDV(
   const vInfDep_kms = vecMag(vInfDep) * auYrToKms;
   const vInfArr_kms = vecMag(vInfArr) * auYrToKms;
 
-  let departureDV: number;
+  let departureDVRaw: number;
   let arrivalDV: number;
 
   if (originBody && originBody.mass_kg > 0) {
     const muOrig = G_KM * originBody.mass_kg;
     const rParkOrig = getParkingRadius(originOrbit, originBody);
-    departureDV = computeNodeDV(vInfDep_kms, muOrig, rParkOrig);
+    departureDVRaw = computeNodeDV(vInfDep_kms, muOrig, rParkOrig);
   } else {
-    departureDV = vInfDep_kms;
+    departureDVRaw = vInfDep_kms;
   }
 
   if (destBody && destBody.mass_kg > 0) {
@@ -98,9 +99,17 @@ export function computeCellDV(
     arrivalDV = vInfArr_kms;
   }
 
+  const launchImpulseApplied = Math.min(
+    Math.max(0, launchImpulseDV_kms),
+    departureDVRaw,
+  );
+  const departureDV = Math.max(0, departureDVRaw - launchImpulseApplied);
+
   return {
     launchDay,
     arrivalDay,
+    departureDVRaw,
+    launchImpulseDV: launchImpulseApplied,
     departureDV,
     arrivalDV,
     totalDV: departureDV + arrivalDV,

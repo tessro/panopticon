@@ -9,6 +9,7 @@ export {
   AU_KM,
   DEG_RAD,
   SECONDS_PER_YEAR,
+  SECONDS_PER_DAY,
   DAYS_PER_YEAR,
   J2000_DATE,
   dateToJY,

@@ -13,6 +13,9 @@ export const DEG_RAD = Math.PI / 180;
 /** Seconds per Julian year */
 export const SECONDS_PER_YEAR = 365.25 * 86400;
 
+/** Seconds per day */
+export const SECONDS_PER_DAY = 86400;
+
 /** Days per Julian year */
 export const DAYS_PER_YEAR = 365.25;
 

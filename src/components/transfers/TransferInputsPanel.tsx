@@ -36,6 +36,10 @@ export function TransferInputsPanel({
   const setDestOrbit = useAppStore((s) => s.setTransferDestinationOrbit);
   const gridResolution = useAppStore((s) => s.transferGridResolution);
   const setGridResolution = useAppStore((s) => s.setTransferGridResolution);
+  const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
+  const setLaunchAcceleration = useAppStore((s) => s.setTransferLaunchAcceleration);
+  const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
+  const setMaxDeltaV = useAppStore((s) => s.setTransferMaxDeltaV);
 
   const hasValidDate = isValidGameDate(gameDate);
   const canCompute = Boolean(
@@ -106,6 +110,49 @@ export function TransferInputsPanel({
         />
       </div>
 
+      <div>
+        <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
+          Launch Accel (m/s²)
+        </Label>
+        <input
+          type="number"
+          min={0}
+          max={50}
+          step={0.1}
+          value={launchAcceleration}
+          onChange={(e) => {
+            const next = Number.parseFloat(e.target.value);
+            if (!Number.isNaN(next)) {
+              setLaunchAcceleration(next);
+            }
+          }}
+          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
+        />
+        <p className="mt-1 font-body text-[10px] text-[var(--color-steel)]">
+          Modeled as a fixed 1-day launch impulse at departure.
+        </p>
+      </div>
+
+      <div>
+        <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
+          Max Total ΔV (km/s)
+        </Label>
+        <input
+          type="number"
+          min={0.1}
+          max={500}
+          step={0.5}
+          value={maxDeltaV}
+          onChange={(e) => {
+            const next = Number.parseFloat(e.target.value);
+            if (!Number.isNaN(next)) {
+              setMaxDeltaV(next);
+            }
+          }}
+          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
+        />
+      </div>
+
       <Button
         onClick={onCompute}
         disabled={!canCompute}
@@ -138,7 +185,17 @@ export function TransferInputsPanel({
             </div>
             <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
               <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Departure ΔV</span>
+                <span className="text-[var(--color-ash)]">Departure ΔV (raw)</span>
+                <span>{result.optimal.departureDVRaw.toFixed(2)} km/s</span>
+              </div>
+              {result.optimal.launchImpulseDV > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-ash)]">Launch impulse</span>
+                  <span>-{result.optimal.launchImpulseDV.toFixed(2)} km/s</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-[var(--color-ash)]">Departure ΔV (net)</span>
                 <span>{result.optimal.departureDV.toFixed(2)} km/s</span>
               </div>
               <div className="flex justify-between">
