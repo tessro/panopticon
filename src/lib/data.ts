@@ -6,11 +6,14 @@ import type {
   StatName,
   AffinityStatus,
 } from "@/types/game";
+import type { SpaceBody, Orbit } from "@/types/orbital";
 
 let _councilorTypes: CouncilorType[] | null = null;
 let _missions: Mission[] | null = null;
 let _factions: Faction[] | null = null;
 let _traits: Trait[] | null = null;
+let _spaceBodies: SpaceBody[] | null = null;
+let _orbits: Orbit[] | null = null;
 
 async function fetchJson<T>(path: string): Promise<T> {
   const url = `${import.meta.env.BASE_URL}${path}`;
@@ -47,6 +50,20 @@ export async function loadTraits(): Promise<Trait[]> {
     _traits = await fetchJson<Trait[]>("data/traits.json");
   }
   return _traits;
+}
+
+export async function loadSpaceBodies(): Promise<SpaceBody[]> {
+  if (!_spaceBodies) {
+    _spaceBodies = await fetchJson<SpaceBody[]>("data/space-bodies.json");
+  }
+  return _spaceBodies;
+}
+
+export async function loadOrbits(): Promise<Orbit[]> {
+  if (!_orbits) {
+    _orbits = await fetchJson<Orbit[]>("data/orbits.json");
+  }
+  return _orbits;
 }
 
 /**
