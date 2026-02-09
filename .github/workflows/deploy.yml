@@ -28,8 +28,9 @@ jobs:
 
       - name: Copy index.html to SPA routes
         run: |
-          mkdir -p dist/professions
+          mkdir -p dist/professions dist/transfers
           cp dist/index.html dist/professions/index.html
+          cp dist/index.html dist/transfers/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

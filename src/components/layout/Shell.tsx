@@ -2,7 +2,10 @@ import { Outlet, NavLink } from "react-router";
 import { motion } from "motion/react";
 import { FactionSelector } from "./FactionSelector";
 
-const NAV_ITEMS = [{ to: "/professions", label: "Professions" }];
+const NAV_ITEMS = [
+  { to: "/professions", label: "Professions" },
+  { to: "/transfers", label: "Transfers" },
+];
 
 export function Shell() {
   return (
