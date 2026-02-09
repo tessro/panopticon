@@ -253,13 +253,13 @@ function ProfessionRow({
   const govChance = govTrait ? getTraitChance(govTrait, ct.name) : 0;
   const crimChance = crimTrait ? getTraitChance(crimTrait, ct.name) : 0;
 
-  const nameClass = getNameCellClass(affinity);
   const secondaryStat = ct.secondaryStat;
   const missionHighlight =
     hoveredMission && ct.missions.includes(hoveredMission);
+  const nameClass = getNameCellClass(affinity, !!missionHighlight);
 
   return (
-    <tr className={`border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""}`}>
+    <tr className={`group/row border-t border-[var(--color-slate)]/50 transition-colors hover:bg-[var(--color-slate)]/30 ${missionHighlight ? "bg-[var(--color-cyan)]/8" : ""}`}>
       {/* Profession name */}
       <td
         className={`sticky left-0 z-10 px-2 py-1 font-display text-xs font-medium tracking-wide ${nameClass}`}
@@ -302,10 +302,11 @@ function ProfessionRow({
         const isFirstInGroup =
           i === 0 ||
           getMissionGroup(orderedMissions[i - 1]!) !== getMissionGroup(m);
+        const isHoveredCol = hoveredMission === m.name;
         return (
           <td
             key={m.name}
-            className={`px-0 py-1 text-center ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""}`}
+            className={`px-0 py-1 text-center ${isFirstInGroup ? "border-l border-[var(--color-slate)]" : ""} ${isHoveredCol ? "bg-[var(--color-cyan)]/10" : ""}`}
           >
             {has && (
               <span className="font-mono text-[11px] font-medium text-[var(--color-cyan)]">
@@ -319,7 +320,7 @@ function ProfessionRow({
   );
 }
 
-function getNameCellClass(affinity: AffinityStatus): string {
+function getNameCellClass(affinity: AffinityStatus, missionHighlight: boolean): string {
   switch (affinity) {
     case "good":
       return "bg-[var(--color-good-dim)] text-[var(--color-good)]";
@@ -328,7 +329,7 @@ function getNameCellClass(affinity: AffinityStatus): string {
     case "ban":
       return "bg-[var(--color-bad-dim)] text-[var(--color-ban)]";
     default:
-      return "bg-[var(--color-abyss)] text-[var(--color-fog)]";
+      return `${missionHighlight ? "bg-[var(--color-deep)]" : "bg-[var(--color-abyss)]"} text-[var(--color-fog)] group-hover/row:bg-[var(--color-deep)]`;
   }
 }
 
