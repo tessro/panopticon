@@ -18,7 +18,6 @@ export function TransfersPage() {
   const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
   const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
   const probeMode = useAppStore((s) => s.transferProbeMode);
-  const probeHighThrust = useAppStore((s) => s.transferProbeHighThrust);
 
   const inputs = useMemo<TransferInputs | null>(() => {
     if (!destOrbit) return null;
@@ -32,7 +31,6 @@ export function TransfersPage() {
       launchAcceleration_mg: launchAcceleration,
       maxDeltaV_kms: maxDeltaV,
       probeMode,
-      probeHighThrust,
     };
   }, [
     originOrbit,
@@ -43,7 +41,6 @@ export function TransfersPage() {
     launchAcceleration,
     maxDeltaV,
     probeMode,
-    probeHighThrust,
   ]);
 
   const { result, isComputing, compute } = usePorkchop(

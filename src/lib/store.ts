@@ -63,8 +63,6 @@ interface AppState {
   setTransferDepartureHorizonYears: (years: number) => void;
   transferProbeMode: boolean;
   setTransferProbeMode: (enabled: boolean) => void;
-  transferProbeHighThrust: boolean;
-  setTransferProbeHighThrust: (enabled: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -106,9 +104,6 @@ export const useAppStore = create<AppState>()(
         set({ transferDepartureHorizonYears: clampDepartureHorizonYears(years) }),
       transferProbeMode: false,
       setTransferProbeMode: (enabled) => set({ transferProbeMode: enabled }),
-      transferProbeHighThrust: false,
-      setTransferProbeHighThrust: (enabled) =>
-        set({ transferProbeHighThrust: enabled }),
     }),
     { name: "panopticon-app" },
   ),

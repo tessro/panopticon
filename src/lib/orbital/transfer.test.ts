@@ -299,7 +299,6 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
           launchAcceleration_mg: ACCELERATION_MG,
           maxDeltaV_kms: MAX_DV_KMS,
           probeMode: true,
-          probeHighThrust: false,
         },
         [EARTH, MARS],
         [LEO1, LMO],
@@ -308,6 +307,7 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(result.chartType).toBe("probeLine");
       expect(result.grid.length).toBe(0);
       expect((result.probeSeries?.length ?? 0)).toBeGreaterThan(0);
+      expect((result.probeSeriesHighThrust?.length ?? 0)).toBeGreaterThan(0);
 
       const first = result.probeSeries![0]!;
       const last = result.probeSeries![result.probeSeries!.length - 1]!;
@@ -352,8 +352,8 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(longSpanDays).toBeLessThan(1900);
     });
 
-    it("high-thrust probes significantly reduce probe timeline transit", () => {
-      const baseline = computePorkchopGrid(
+    it("high-thrust probe series has significantly shorter transit than default", () => {
+      const result = computePorkchopGrid(
         {
           originOrbit: "LowEarthOrbit1",
           destinationOrbit: "LowMarsOrbit",
@@ -363,30 +363,14 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
           launchAcceleration_mg: ACCELERATION_MG,
           maxDeltaV_kms: MAX_DV_KMS,
           probeMode: true,
-          probeHighThrust: false,
-        },
-        [EARTH, MARS],
-        [LEO1, LMO],
-      );
-      const highThrust = computePorkchopGrid(
-        {
-          originOrbit: "LowEarthOrbit1",
-          destinationOrbit: "LowMarsOrbit",
-          gameDate: "2028-01-01",
-          gridResolution: 50,
-          departureHorizonYears: 2,
-          launchAcceleration_mg: ACCELERATION_MG,
-          maxDeltaV_kms: MAX_DV_KMS,
-          probeMode: true,
-          probeHighThrust: true,
         },
         [EARTH, MARS],
         [LEO1, LMO],
       );
 
-      expect(baseline.optimal).not.toBeNull();
-      expect(highThrust.optimal).not.toBeNull();
-      expect(highThrust.optimal!.transitDays).toBeLessThan(baseline.optimal!.transitDays * 0.7);
+      expect(result.optimal).not.toBeNull();
+      expect(result.optimalHighThrust).not.toBeNull();
+      expect(result.optimalHighThrust!.transitDays).toBeLessThan(result.optimal!.transitDays * 0.7);
     });
 
   });

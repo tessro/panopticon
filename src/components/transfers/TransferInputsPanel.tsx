@@ -1,8 +1,69 @@
-import type { SpaceBody, Orbit, PorkchopResult } from "@/types/orbital";
+import type { SpaceBody, Orbit, PorkchopResult, PorkchopCell } from "@/types/orbital";
 import { useAppStore } from "@/lib/store";
 import { OrbitPicker } from "./OrbitPicker";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+
+function OptimalTransferCard({
+  cell,
+  label,
+  accentColor,
+}: {
+  cell: PorkchopCell;
+  label: string;
+  accentColor: string;
+}) {
+  return (
+    <div className="rounded border border-[var(--color-slate)] bg-[var(--color-deep)]/60 p-3">
+      <h4
+        className="font-display mb-2 text-xs font-medium tracking-wide uppercase"
+        style={{ color: accentColor }}
+      >
+        {label}
+      </h4>
+      <div className="flex flex-col gap-1 font-mono text-xs text-[var(--color-fog)]">
+        <div className="flex justify-between">
+          <span className="text-[var(--color-ash)]">Launch</span>
+          <span>{formatDate(cell.launchDay)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[var(--color-ash)]">Arrival</span>
+          <span>{formatDate(cell.arrivalDay)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[var(--color-ash)]">Transit</span>
+          <span>{Math.round(cell.transitDays)} days</span>
+        </div>
+        <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
+          <div className="flex justify-between">
+            <span className="text-[var(--color-ash)]">Departure ΔV</span>
+            <span>{cell.departureDV.toFixed(2)} km/s</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--color-ash)]">Arrival ΔV</span>
+            <span>{cell.arrivalDV.toFixed(2)} km/s</span>
+          </div>
+          {cell.boostBurnDays != null && (
+            <div className="flex justify-between">
+              <span className="text-[var(--color-ash)]">Boost Burn</span>
+              <span>{cell.boostBurnDays.toFixed(1)} days</span>
+            </div>
+          )}
+          {cell.decelBurnDays != null && (
+            <div className="flex justify-between">
+              <span className="text-[var(--color-ash)]">Capture Burn</span>
+              <span>{cell.decelBurnDays.toFixed(1)} days</span>
+            </div>
+          )}
+          <div className="flex justify-between font-medium" style={{ color: accentColor }}>
+            <span>Total ΔV</span>
+            <span>{cell.totalDV.toFixed(2)} km/s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface TransferInputsPanelProps {
   bodies: SpaceBody[];
@@ -44,9 +105,6 @@ export function TransferInputsPanel({
   const setMaxDeltaV = useAppStore((s) => s.setTransferMaxDeltaV);
   const probeMode = useAppStore((s) => s.transferProbeMode);
   const setProbeMode = useAppStore((s) => s.setTransferProbeMode);
-  const probeHighThrust = useAppStore((s) => s.transferProbeHighThrust);
-  const setProbeHighThrust = useAppStore((s) => s.setTransferProbeHighThrust);
-
   const hasValidDate = isValidGameDate(gameDate);
   const canCompute = Boolean(
     destOrbit &&
@@ -205,24 +263,6 @@ export function TransferInputsPanel({
         </p>
       )}
 
-      <label className="flex items-center gap-2 rounded border border-[var(--color-slate)] bg-[var(--color-deep)]/40 px-2 py-2">
-        <input
-          type="checkbox"
-          checked={probeHighThrust}
-          disabled={!probeMode}
-          onChange={(e) => setProbeHighThrust(e.target.checked)}
-          className="h-4 w-4 accent-[var(--color-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <div className="flex flex-col">
-          <span className="font-display text-xs tracking-wide text-[var(--color-light)] uppercase">
-            High Thrust Probes
-          </span>
-          <span className="font-body text-[10px] text-[var(--color-steel)]">
-            Doubles probe thrust in the timeline model (about half transit time).
-          </span>
-        </div>
-      </label>
-
       <Button
         onClick={onCompute}
         disabled={!canCompute}
@@ -236,51 +276,19 @@ export function TransferInputsPanel({
       </Button>
 
       {result?.optimal && (
-        <div className="rounded border border-[var(--color-slate)] bg-[var(--color-deep)]/60 p-3">
-          <h4 className="font-display mb-2 text-xs font-medium tracking-wide text-[var(--color-cyan)] uppercase">
-            Optimal Transfer
-          </h4>
-          <div className="flex flex-col gap-1 font-mono text-xs text-[var(--color-fog)]">
-            <div className="flex justify-between">
-              <span className="text-[var(--color-ash)]">Launch</span>
-              <span>{formatDate(result.optimal.launchDay)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--color-ash)]">Arrival</span>
-              <span>{formatDate(result.optimal.arrivalDay)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--color-ash)]">Transit</span>
-              <span>{Math.round(result.optimal.transitDays)} days</span>
-            </div>
-            <div className="mt-1 border-t border-[var(--color-slate)] pt-1">
-              <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Departure ΔV</span>
-                <span>{result.optimal.departureDV.toFixed(2)} km/s</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-ash)]">Arrival ΔV</span>
-                <span>{result.optimal.arrivalDV.toFixed(2)} km/s</span>
-              </div>
-              {result.optimal.boostBurnDays != null && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--color-ash)]">Boost Burn</span>
-                  <span>{result.optimal.boostBurnDays.toFixed(1)} days</span>
-                </div>
-              )}
-              {result.optimal.decelBurnDays != null && (
-                <div className="flex justify-between">
-                  <span className="text-[var(--color-ash)]">Capture Burn</span>
-                  <span>{result.optimal.decelBurnDays.toFixed(1)} days</span>
-                </div>
-              )}
-              <div className="flex justify-between font-medium text-[var(--color-cyan)]">
-                <span>Total ΔV</span>
-                <span>{result.optimal.totalDV.toFixed(2)} km/s</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <OptimalTransferCard
+          cell={result.optimal}
+          label={probeMode ? "Optimal (Default)" : "Optimal Transfer"}
+          accentColor="var(--color-cyan)"
+        />
+      )}
+
+      {probeMode && result?.optimalHighThrust && (
+        <OptimalTransferCard
+          cell={result.optimalHighThrust}
+          label="Optimal (High Thrust)"
+          accentColor="#f59e0b"
+        />
       )}
     </div>
   );

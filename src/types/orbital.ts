@@ -66,17 +66,17 @@ export interface TransferInputs {
   maxDeltaV_kms: number;
   /** Probe-mode transfer assumptions (launched from Earth, uncapped dV) */
   probeMode?: boolean;
-  /** Whether high-thrust probe assumptions are enabled */
-  probeHighThrust?: boolean;
 }
 
 export interface PorkchopResult {
   chartType?: "porkchop" | "probeLine";
   probeSeries?: PorkchopCell[];
+  probeSeriesHighThrust?: PorkchopCell[];
   grid: (PorkchopCell | null)[][];
   minDV: number;
   maxDV: number;
   optimal: PorkchopCell | null;
+  optimalHighThrust?: PorkchopCell | null;
   launchStartDay: number;
   launchStepDays: number;
   minTransitDays: number;

@@ -51,10 +51,12 @@ function emptyResult(): PorkchopResult {
   return {
     chartType: "porkchop",
     probeSeries: [],
+    probeSeriesHighThrust: [],
     grid: [],
     minDV: 0,
     maxDV: 0,
     optimal: null,
+    optimalHighThrust: null,
     launchStartDay: 0,
     launchStepDays: 0,
     minTransitDays: 0,
@@ -681,7 +683,6 @@ export function computePorkchopGrid(
   orbits: Orbit[],
 ): PorkchopResult {
   const probeMode = inputs.probeMode === true;
-  const probeHighThrust = inputs.probeHighThrust === true;
   const originOrbit = probeMode
     ? findProbeOriginOrbit(orbits)
     : orbits.find((o) => o.name === inputs.originOrbit);
@@ -700,7 +701,7 @@ export function computePorkchopGrid(
 
   const N = Math.max(20, Math.min(GRID_RESOLUTION_MAX, Math.floor(inputs.gridResolution)));
   const launchAcceleration_mg = probeMode
-    ? (probeHighThrust ? PROBE_HIGH_THRUST_ACCELERATION_MG : PROBE_ACCELERATION_MG)
+    ? PROBE_ACCELERATION_MG
     : Number.isFinite(inputs.launchAcceleration_mg)
       ? Math.max(0, inputs.launchAcceleration_mg)
       : 0;
@@ -840,25 +841,49 @@ export function computePorkchopGrid(
     : undefined;
 
   if (probeMode) {
-    const probeDurationScale = launchAcceleration_mg > 0
-      ? PROBE_ACCELERATION_MG / launchAcceleration_mg
-      : 1;
-    return computeProbeTransferLine({
+    const commonProbeInput = {
       N,
       startTime_s,
       latestLaunchAllowedTime_s,
       latestArrivalAllowedTime_s,
-      probeDurationScale,
       launchStart_s,
       launchStep_s,
       barycenterMu_m3s2,
       barycenterMeanRadius_m,
-      fleetAcceleration_mps2,
       isSunBarycenter,
       originOrbitModel,
       destinationOrbitModel,
       hybridRemap,
+    };
+
+    const defaultResult = computeProbeTransferLine({
+      ...commonProbeInput,
+      probeDurationScale: 1,
+      fleetAcceleration_mps2,
     });
+
+    const highThrustAccel_mps2 =
+      (PROBE_HIGH_THRUST_ACCELERATION_MG * STANDARD_GRAVITY_MPS2) / 1000;
+    const highThrustResult = computeProbeTransferLine({
+      ...commonProbeInput,
+      probeDurationScale: PROBE_ACCELERATION_MG / PROBE_HIGH_THRUST_ACCELERATION_MG,
+      fleetAcceleration_mps2: highThrustAccel_mps2,
+    });
+
+    const mergedFailures: Record<number, number> = { ...defaultResult.failureCounts };
+    for (const [key, count] of Object.entries(highThrustResult.failureCounts ?? {})) {
+      const k = Number(key);
+      mergedFailures[k] = (mergedFailures[k] ?? 0) + count;
+    }
+
+    return {
+      ...defaultResult,
+      probeSeriesHighThrust: highThrustResult.probeSeries,
+      optimalHighThrust: highThrustResult.optimal,
+      minDV: Math.min(defaultResult.minDV, highThrustResult.minDV),
+      maxDV: Math.max(defaultResult.maxDV, highThrustResult.maxDV),
+      failureCounts: mergedFailures,
+    };
   }
 
   const grid: (PorkchopCell | null)[][] = [];
