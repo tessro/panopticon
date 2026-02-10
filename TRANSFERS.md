@@ -348,12 +348,28 @@ else:            return |T₁·T₂ / (T₁ − T₂)|  // clamped to max(T₁,T
    with prograde and retrograde passes
 4. **Microthrust check** — if fleet has low-thrust capability,
    `CalculateMicrothrustTransfer()` computes spiral alternatives
-5. **Hybrid transfers** — `CalculateImpulseMicrothrustHybridTransfer()` combines
+5. **Hybrid transfers** — `CalculateImpulseMicrothrustHybridTransfers()` combines
    impulsive burns (SOI escape/capture) with microthrust spirals
 6. **Validation** — checks ΔV budget, time constraints, collision with bodies,
    Hill radius limits
 7. **Selection** — `TransferResult.Best()` picks optimal trajectory
 8. **Callback** — returns `Trajectory[]` to UI
+
+### TI parity note: microthrust/hybrid are part of core planner logic
+
+- `RequestTrajectories(...)` calls `GetTrajectoryModelsForConditions(...)`, then
+  iterates that model list and dispatches by `TrajectoryModel` via a switch
+  (`Assembly-CSharp.il` lines ~`875064` and `875092`–`875130`).
+- `TrajectoryModel.Microthrust` dispatches to
+  `CalculateMicrothrustTransfer(...)` (`~875201`).
+- `TrajectoryModel.ImpulseMicrothrustHybrid` dispatches to
+  `CalculateImpulseMicrothrustHybridTransfers(...)` (`~875177`).
+- `GetTrajectoryModelsForConditions(...)` explicitly appends model id `3`
+  (microthrust) and `4` (impulse+microthrust hybrid) under the relevant
+  conditions (`~874355`–`874377`).
+- The enum also defines `OrbitPhasingMicrothrustHybrid = 7`
+  (`~1072310`), but in `RequestTrajectories(...)` this value currently routes to
+  the same no-op/default branch as unimplemented cases.
 
 ---
 
