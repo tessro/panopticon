@@ -36,11 +36,6 @@ function dayToDate(day: number): Date {
   return new Date(day * 86400000);
 }
 
-const PROBE_DEFAULT_COLOR = "var(--color-cyan)";
-const PROBE_DEFAULT_DIM_COLOR = "var(--color-cyan-dim)";
-const PROBE_HIGH_THRUST_COLOR = "#f59e0b";
-const PROBE_HIGH_THRUST_DIM_COLOR = "#b45309";
-
 function ProbeLineContent({
   result,
   width,
@@ -59,7 +54,7 @@ function ProbeLineContent({
   const plotOffsetX = MARGIN.left + Math.max(0, (availableWidth - plotSize) / 2);
   const plotOffsetY = MARGIN.top + Math.max(0, (availableHeight - plotSize) / 2);
 
-  const defaultPoints = useMemo(
+  const points = useMemo(
     () =>
       (result.probeSeries ?? [])
         .slice()
@@ -67,24 +62,14 @@ function ProbeLineContent({
     [result.probeSeries],
   );
 
-  const highThrustPoints = useMemo(
-    () =>
-      (result.probeSeriesHighThrust ?? [])
-        .slice()
-        .sort((a, b) => a.launchDay - b.launchDay),
-    [result.probeSeriesHighThrust],
-  );
-
   const optimal = result.optimal;
-  const optimalHT = result.optimalHighThrust;
 
   const ranges = useMemo(() => {
-    const allPoints = [...defaultPoints, ...highThrustPoints];
-    if (allPoints.length === 0) return null;
-    const minLaunch = Math.min(...allPoints.map((p) => p.launchDay));
-    const maxLaunch = Math.max(...allPoints.map((p) => p.launchDay));
-    const minArrival = Math.min(...allPoints.map((p) => p.arrivalDay));
-    const maxArrival = Math.max(...allPoints.map((p) => p.arrivalDay));
+    if (points.length === 0) return null;
+    const minLaunch = Math.min(...points.map((p) => p.launchDay));
+    const maxLaunch = Math.max(...points.map((p) => p.launchDay));
+    const minArrival = Math.min(...points.map((p) => p.arrivalDay));
+    const maxArrival = Math.max(...points.map((p) => p.arrivalDay));
     const launchPad =
       Math.max((maxLaunch - minLaunch) / 40, result.launchStepDays > 0 ? result.launchStepDays : 1);
     const arrivalPad = Math.max((maxArrival - minArrival) / 40, 1);
@@ -95,7 +80,7 @@ function ProbeLineContent({
       arrivalMin: minArrival - arrivalPad,
       arrivalMax: maxArrival + arrivalPad,
     };
-  }, [defaultPoints, highThrustPoints, result.launchStepDays]);
+  }, [points, result.launchStepDays]);
 
   const xScale = useMemo(
     () =>
@@ -115,20 +100,12 @@ function ProbeLineContent({
     [ranges, plotSize],
   );
 
-  const defaultLinePoints = useMemo(
+  const linePoints = useMemo(
     () =>
-      defaultPoints
+      points
         .map((point) => `${xScale(dayToDate(point.launchDay))},${yScale(dayToDate(point.arrivalDay))}`)
         .join(" "),
-    [defaultPoints, xScale, yScale],
-  );
-
-  const highThrustLinePoints = useMemo(
-    () =>
-      highThrustPoints
-        .map((point) => `${xScale(dayToDate(point.launchDay))},${yScale(dayToDate(point.arrivalDay))}`)
-        .join(" "),
-    [highThrustPoints, xScale, yScale],
+    [points, xScale, yScale],
   );
 
   const handleMouseMove = useCallback(
@@ -143,7 +120,7 @@ function ProbeLineContent({
     setHoveredCell(null);
   }, []);
 
-  if (!ranges || plotSize <= 0 || (defaultPoints.length === 0 && highThrustPoints.length === 0)) {
+  if (!ranges || plotSize <= 0 || points.length === 0) {
     const failure = transferOutcomeLabel(result.bestFailureOutcome);
     return (
       <div className="flex h-full items-center justify-center">
@@ -165,74 +142,37 @@ function ProbeLineContent({
     <div className="relative h-full w-full">
       <svg width={width} height={height}>
         <Group left={plotOffsetX} top={plotOffsetY}>
-          {/* Default thrust line */}
-          {defaultLinePoints && (
+          {linePoints && (
             <polyline
-              points={defaultLinePoints}
+              points={linePoints}
               fill="none"
-              stroke={PROBE_DEFAULT_COLOR}
+              stroke="var(--color-cyan)"
               strokeWidth={2}
               opacity={0.9}
             />
           )}
 
-          {defaultPoints.map((point) => (
+          {points.map((point) => (
             <circle
-              key={`d-${point.launchDay}-${point.arrivalDay}`}
+              key={`${point.launchDay}-${point.arrivalDay}`}
               cx={xScale(dayToDate(point.launchDay))}
               cy={yScale(dayToDate(point.arrivalDay))}
               r={3}
               fill="var(--color-fog)"
-              stroke={PROBE_DEFAULT_DIM_COLOR}
+              stroke="var(--color-cyan-dim)"
               strokeWidth={1}
               onMouseMove={(e) => handleMouseMove(e, point)}
               onMouseLeave={handleMouseLeave}
             />
           ))}
 
-          {/* High thrust line */}
-          {highThrustLinePoints && (
-            <polyline
-              points={highThrustLinePoints}
-              fill="none"
-              stroke={PROBE_HIGH_THRUST_COLOR}
-              strokeWidth={2}
-              opacity={0.9}
-            />
-          )}
-
-          {highThrustPoints.map((point) => (
-            <circle
-              key={`ht-${point.launchDay}-${point.arrivalDay}`}
-              cx={xScale(dayToDate(point.launchDay))}
-              cy={yScale(dayToDate(point.arrivalDay))}
-              r={3}
-              fill="#fef3c7"
-              stroke={PROBE_HIGH_THRUST_DIM_COLOR}
-              strokeWidth={1}
-              onMouseMove={(e) => handleMouseMove(e, point)}
-              onMouseLeave={handleMouseLeave}
-            />
-          ))}
-
-          {/* Optimal markers */}
           {optimal && (
             <circle
               cx={xScale(dayToDate(optimal.launchDay))}
               cy={yScale(dayToDate(optimal.arrivalDay))}
               r={6}
               fill="none"
-              stroke={PROBE_DEFAULT_COLOR}
-              strokeWidth={2}
-            />
-          )}
-          {optimalHT && (
-            <circle
-              cx={xScale(dayToDate(optimalHT.launchDay))}
-              cy={yScale(dayToDate(optimalHT.arrivalDay))}
-              r={6}
-              fill="none"
-              stroke={PROBE_HIGH_THRUST_COLOR}
+              stroke="var(--color-cyan)"
               strokeWidth={2}
             />
           )}
@@ -283,19 +223,11 @@ function ProbeLineContent({
       </svg>
 
       {/* Legend */}
-      <div className="absolute right-6 top-6 flex flex-col gap-1.5 rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/80 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <div className="h-0.5 w-4 rounded-full bg-[var(--color-cyan)]" />
-          <span className="font-display text-[10px] tracking-wide text-[var(--color-ash)] uppercase">
-            Default
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-0.5 w-4 rounded-full" style={{ backgroundColor: PROBE_HIGH_THRUST_COLOR }} />
-          <span className="font-display text-[10px] tracking-wide text-[var(--color-ash)] uppercase">
-            High Thrust
-          </span>
-        </div>
+      <div className="absolute right-6 top-6 flex items-center gap-2 rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/80 px-3 py-2">
+        <div className="h-0.5 w-4 rounded-full bg-[var(--color-cyan)]" />
+        <span className="font-display text-[10px] tracking-wide text-[var(--color-ash)] uppercase">
+          Probe Transfer Line
+        </span>
       </div>
 
       {hoveredCell && (

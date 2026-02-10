@@ -307,12 +307,35 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(result.chartType).toBe("probeLine");
       expect(result.grid.length).toBe(0);
       expect((result.probeSeries?.length ?? 0)).toBeGreaterThan(0);
-      expect((result.probeSeriesHighThrust?.length ?? 0)).toBeGreaterThan(0);
+      expect("probeSeriesHighThrust" in result).toBe(false);
+      expect("optimalHighThrust" in result).toBe(false);
 
       const first = result.probeSeries![0]!;
       const last = result.probeSeries![result.probeSeries!.length - 1]!;
       expect(last.launchDay).toBeGreaterThan(first.launchDay);
       expect(last.arrivalDay).toBeGreaterThan(first.arrivalDay);
+    });
+
+    it("probe mode analytical Hohmann DV for Earth→Mars is ~5.6 km/s", () => {
+      const result = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+          probeMode: true,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+
+      expect(result.optimal).not.toBeNull();
+      // Analytical Hohmann DV for Earth→Mars is ~5.6 km/s
+      // (departure ~2.9 + arrival ~2.6 + small inclination change)
+      expect(result.optimal!.totalDV).toBeGreaterThan(5.0);
+      expect(result.optimal!.totalDV).toBeLessThan(6.5);
     });
 
     it("departure horizon controls the launch-axis span up to 5 years", () => {
@@ -350,27 +373,6 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(shortSpanDays).toBeLessThan(190);
       expect(longSpanDays).toBeGreaterThan(1800);
       expect(longSpanDays).toBeLessThan(1900);
-    });
-
-    it("high-thrust probe series has significantly shorter transit than default", () => {
-      const result = computePorkchopGrid(
-        {
-          originOrbit: "LowEarthOrbit1",
-          destinationOrbit: "LowMarsOrbit",
-          gameDate: "2028-01-01",
-          gridResolution: 50,
-          departureHorizonYears: 2,
-          launchAcceleration_mg: ACCELERATION_MG,
-          maxDeltaV_kms: MAX_DV_KMS,
-          probeMode: true,
-        },
-        [EARTH, MARS],
-        [LEO1, LMO],
-      );
-
-      expect(result.optimal).not.toBeNull();
-      expect(result.optimalHighThrust).not.toBeNull();
-      expect(result.optimalHighThrust!.transitDays).toBeLessThan(result.optimal!.transitDays * 0.7);
     });
 
   });

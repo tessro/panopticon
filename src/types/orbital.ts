@@ -71,12 +71,10 @@ export interface TransferInputs {
 export interface PorkchopResult {
   chartType?: "porkchop" | "probeLine";
   probeSeries?: PorkchopCell[];
-  probeSeriesHighThrust?: PorkchopCell[];
   grid: (PorkchopCell | null)[][];
   minDV: number;
   maxDV: number;
   optimal: PorkchopCell | null;
-  optimalHighThrust?: PorkchopCell | null;
   launchStartDay: number;
   launchStepDays: number;
   minTransitDays: number;

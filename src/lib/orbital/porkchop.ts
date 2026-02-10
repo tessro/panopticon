@@ -44,19 +44,15 @@ const HYBRID_REMAP_SAMPLES = 48;
 const HYBRID_REMAP_ITERATIONS = 2;
 const GRID_RESOLUTION_MAX = 300;
 const PROBE_DEFAULT_ORIGIN_ORBIT = "LowEarthOrbit1";
-const PROBE_ACCELERATION_MG = 3000;
-const PROBE_HIGH_THRUST_ACCELERATION_MG = 6000;
 
 function emptyResult(): PorkchopResult {
   return {
     chartType: "porkchop",
     probeSeries: [],
-    probeSeriesHighThrust: [],
     grid: [],
     minDV: 0,
     maxDV: 0,
     optimal: null,
-    optimalHighThrust: null,
     launchStartDay: 0,
     launchStepDays: 0,
     minTransitDays: 0,
@@ -379,6 +375,54 @@ function hohmannDuration_s(r1_m: number, r2_m: number, mu: number): number {
   return Math.PI * Math.sqrt((a * a * a) / mu);
 }
 
+function hohmannDeltaV_kms(
+  r1_m: number,
+  r2_m: number,
+  mu_m3s2: number,
+  n1: Vec3,
+  n2: Vec3,
+  transitDuration_s?: number,
+): { departureDV: number; arrivalDV: number; inclinationDV: number; totalDV: number } {
+  const sameRadius = Math.abs(r1_m - r2_m) <= Math.max(r1_m, r2_m) * 1e-12;
+
+  let departureDV_mps: number;
+  let arrivalDV_mps: number;
+
+  if (sameRadius && transitDuration_s != null && transitDuration_s > 0) {
+    const a_transfer = Math.cbrt(
+      (mu_m3s2 * transitDuration_s * transitDuration_s) / (4 * Math.PI * Math.PI),
+    );
+    const v_transfer = Math.sqrt(mu_m3s2 * (2 / r1_m - 1 / a_transfer));
+    const v_circ = Math.sqrt(mu_m3s2 / r1_m);
+    const burnDV = Math.abs(v_transfer - v_circ);
+    departureDV_mps = burnDV;
+    arrivalDV_mps = burnDV;
+  } else {
+    const v_circ1 = Math.sqrt(mu_m3s2 / r1_m);
+    const v_circ2 = Math.sqrt(mu_m3s2 / r2_m);
+    departureDV_mps = Math.abs(v_circ1 * (Math.sqrt((2 * r2_m) / (r1_m + r2_m)) - 1));
+    arrivalDV_mps = Math.abs(v_circ2 * (1 - Math.sqrt((2 * r1_m) / (r1_m + r2_m))));
+  }
+
+  const mag1 = Math.sqrt(vecDot(n1, n1));
+  const mag2 = Math.sqrt(vecDot(n2, n2));
+  let inclinationDV_mps = 0;
+  if (mag1 > 0 && mag2 > 0) {
+    const cosI = Math.max(-1, Math.min(1, vecDot(n1, n2) / (mag1 * mag2)));
+    const deltaI = Math.acos(cosI);
+    const v_circ1 = Math.sqrt(mu_m3s2 / r1_m);
+    const v_circ2 = Math.sqrt(mu_m3s2 / r2_m);
+    inclinationDV_mps = 2 * Math.sin(deltaI / 2) * Math.min(v_circ1, v_circ2);
+  }
+
+  const departureDV = departureDV_mps / 1000;
+  const arrivalDV = arrivalDV_mps / 1000;
+  const inclinationDV = inclinationDV_mps / 1000;
+  const totalDV = departureDV + arrivalDV + inclinationDV;
+
+  return { departureDV, arrivalDV, inclinationDV, totalDV };
+}
+
 function lagrangeTransferDuration_s(
   transferBarycenterMu_m3s2: number,
   radius_m: number,
@@ -517,37 +561,27 @@ function probeTransitDuration_s(input: ProbeTransitDurationInput): number | null
 
 interface ProbeLineInput {
   N: number;
-  startTime_s: number;
   latestLaunchAllowedTime_s: number;
   latestArrivalAllowedTime_s: number;
-  probeDurationScale: number;
   launchStart_s: number;
   launchStep_s: number;
   barycenterMu_m3s2: number;
-  barycenterMeanRadius_m: number;
-  fleetAcceleration_mps2: number;
   isSunBarycenter: boolean;
   originOrbitModel: OrbitModel;
   destinationOrbitModel: OrbitModel;
-  hybridRemap?: HybridRemapInput;
 }
 
 function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
   const {
     N,
-    startTime_s,
     latestLaunchAllowedTime_s,
     latestArrivalAllowedTime_s,
-    probeDurationScale,
     launchStart_s,
     launchStep_s,
     barycenterMu_m3s2,
-    barycenterMeanRadius_m,
-    fleetAcceleration_mps2,
     isSunBarycenter,
     originOrbitModel,
     destinationOrbitModel,
-    hybridRemap,
   } = input;
 
   const series: PorkchopCell[] = [];
@@ -559,7 +593,7 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
 
   for (let i = 0; i < N; i++) {
     const launchTime_s = launchStart_s + i * launchStep_s;
-    const rawTransitDuration_s = probeTransitDuration_s({
+    const transitDuration_s = probeTransitDuration_s({
       launchTime_s,
       hardCap_s: TRANSFER_DURATION_HARD_CAP_S,
       barycenterMu_m3s2,
@@ -568,18 +602,10 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
       destinationOrbitModel,
     });
 
-    if (!rawTransitDuration_s || !Number.isFinite(rawTransitDuration_s) || rawTransitDuration_s <= 0) {
+    if (!transitDuration_s || !Number.isFinite(transitDuration_s) || transitDuration_s <= 0) {
       const fail = buildFailure(TransferOutcome.Fail_CodePathNotImplemented, 0, 0);
       failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
-      bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
-      continue;
-    }
-
-    const transitDuration_s = rawTransitDuration_s * probeDurationScale;
-    if (!Number.isFinite(transitDuration_s) || transitDuration_s <= 0) {
-      const fail = buildFailure(TransferOutcome.Fail_CodePathNotImplemented, 0, 0);
-      failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
-      bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
+      bestFailure = bestTransferResult(bestFailure, fail, 0);
       continue;
     }
 
@@ -594,51 +620,32 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
         transitDuration_s,
       );
       failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
-      bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
+      bestFailure = bestTransferResult(bestFailure, fail, 0);
       continue;
     }
 
-    const sourceState_m = originOrbitModel.stateAtTime(launchTime_s);
-    const destinationState_m = destinationOrbitModel.stateAtTime(arrivalTime_s);
-
-    const solution = solveTwoBurnLambertTransfer({
-      launchTime_s,
-      arrivalTime_s,
-      sourceState_m,
-      destinationState_m,
+    const dv = hohmannDeltaV_kms(
+      originOrbitModel.semiMajorAxis_m,
+      destinationOrbitModel.semiMajorAxis_m,
       barycenterMu_m3s2,
-      barycenterMeanRadius_m,
-      fleetAcceleration_mps2,
-      hybridRemap,
-    });
+      originOrbitModel.normalVector,
+      destinationOrbitModel.normalVector,
+      transitDuration_s,
+    );
 
-    let evaluation: TITransferResult = solution.result;
-    if (evaluation.outcome === TransferOutcome.Success) {
-      if (solution.launchTime_s < startTime_s) {
-        evaluation = buildFailure(
-          TransferOutcome.Fail_LaunchInPast,
-          startTime_s - solution.launchTime_s,
-          transitDuration_s,
-        );
-      } else if (
-        solution.transferOrbit &&
-        solution.transferOrbit.eccentricity >= 1
-      ) {
-        evaluation = buildFailure(
-          TransferOutcome.Fail_Hyperbolic,
-          solution.transferOrbit.eccentricity,
-          0,
-        );
-      }
-    }
-
-    if (evaluation.outcome !== TransferOutcome.Success) {
-      failureCounts[evaluation.outcome] = (failureCounts[evaluation.outcome] ?? 0) + 1;
-      bestFailure = bestTransferResult(bestFailure, evaluation, fleetAcceleration_mps2);
-      continue;
-    }
-
-    const cell = toAnchoredPorkchopCell(solution, launchTime_s, arrivalTime_s);
+    const launchDay = launchTime_s / SECONDS_PER_DAY;
+    const arrivalDay = arrivalTime_s / SECONDS_PER_DAY;
+    const cell: PorkchopCell = {
+      launchDay,
+      arrivalDay,
+      departureDVRaw: dv.departureDV,
+      launchImpulseDV: dv.departureDV,
+      departureDV: dv.departureDV,
+      arrivalDV: dv.arrivalDV + dv.inclinationDV,
+      totalDVRaw: dv.totalDV,
+      totalDV: dv.totalDV,
+      transitDays: transitDuration_s / SECONDS_PER_DAY,
+    };
     series.push(cell);
 
     if (cell.totalDV < minDV) {
@@ -700,18 +707,14 @@ export function computePorkchopGrid(
   if (!Number.isFinite(startDateValue)) return emptyResult();
 
   const N = Math.max(20, Math.min(GRID_RESOLUTION_MAX, Math.floor(inputs.gridResolution)));
-  const launchAcceleration_mg = probeMode
-    ? PROBE_ACCELERATION_MG
-    : Number.isFinite(inputs.launchAcceleration_mg)
-      ? Math.max(0, inputs.launchAcceleration_mg)
-      : 0;
+  const launchAcceleration_mg = Number.isFinite(inputs.launchAcceleration_mg)
+    ? Math.max(0, inputs.launchAcceleration_mg)
+    : 0;
   const fleetAcceleration_mps2 =
     (launchAcceleration_mg * STANDARD_GRAVITY_MPS2) / 1000;
-  const dvCap_kms = probeMode
-    ? Number.POSITIVE_INFINITY
-    : Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
-      ? inputs.maxDeltaV_kms
-      : Number.POSITIVE_INFINITY;
+  const dvCap_kms = Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
+    ? inputs.maxDeltaV_kms
+    : Number.POSITIVE_INFINITY;
 
   const samePrimaryBody = originHelioBody.name === destHelioBody.name;
   const sameLocalBody =
@@ -841,49 +844,17 @@ export function computePorkchopGrid(
     : undefined;
 
   if (probeMode) {
-    const commonProbeInput = {
+    return computeProbeTransferLine({
       N,
-      startTime_s,
       latestLaunchAllowedTime_s,
       latestArrivalAllowedTime_s,
       launchStart_s,
       launchStep_s,
       barycenterMu_m3s2,
-      barycenterMeanRadius_m,
       isSunBarycenter,
       originOrbitModel,
       destinationOrbitModel,
-      hybridRemap,
-    };
-
-    const defaultResult = computeProbeTransferLine({
-      ...commonProbeInput,
-      probeDurationScale: 1,
-      fleetAcceleration_mps2,
     });
-
-    const highThrustAccel_mps2 =
-      (PROBE_HIGH_THRUST_ACCELERATION_MG * STANDARD_GRAVITY_MPS2) / 1000;
-    const highThrustResult = computeProbeTransferLine({
-      ...commonProbeInput,
-      probeDurationScale: PROBE_ACCELERATION_MG / PROBE_HIGH_THRUST_ACCELERATION_MG,
-      fleetAcceleration_mps2: highThrustAccel_mps2,
-    });
-
-    const mergedFailures: Record<number, number> = { ...defaultResult.failureCounts };
-    for (const [key, count] of Object.entries(highThrustResult.failureCounts ?? {})) {
-      const k = Number(key);
-      mergedFailures[k] = (mergedFailures[k] ?? 0) + count;
-    }
-
-    return {
-      ...defaultResult,
-      probeSeriesHighThrust: highThrustResult.probeSeries,
-      optimalHighThrust: highThrustResult.optimal,
-      minDV: Math.min(defaultResult.minDV, highThrustResult.minDV),
-      maxDV: Math.max(defaultResult.maxDV, highThrustResult.maxDV),
-      failureCounts: mergedFailures,
-    };
   }
 
   const grid: (PorkchopCell | null)[][] = [];
