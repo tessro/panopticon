@@ -488,6 +488,11 @@ export function computePorkchopGrid(
       : Number.isFinite(synodicPeriodEstimate_s) && synodicPeriodEstimate_s > 0
         ? synodicPeriodEstimate_s
         : Math.max(SECONDS_PER_DAY, hohmannTransferDuration_s);
+    // Center the grid around the Hohmann anchor. The linearized timing
+    // can be off by months for eccentric orbits, so we need coverage
+    // both before and after the computed window.
+    const halfSpan = fallbackLaunchSpan_s / 2;
+    launchStart_s = Math.max(startTime_s, launchStart_s - halfSpan);
     launchEnd_s = Math.min(latestAllowedTime_s, launchStart_s + fallbackLaunchSpan_s);
   }
   if (!(launchEnd_s > launchStart_s)) {
