@@ -135,6 +135,7 @@ const GAME_SOLUTIONS = {
   ],
   /** Mid-window transfers */
   midWindow: [
+    { dV_kps: 14.4, launch: "2028-08-13T20:41:00Z", arrival: "2029-05-10T19:42:00Z" },
     { dV_kps: 12.1, launch: "2028-12-01T22:40:00Z", arrival: "2029-06-03T10:26:00Z" },
     { dV_kps: 7.7, launch: "2028-12-09T07:55:00Z", arrival: "2029-07-22T07:14:00Z" },
   ],
