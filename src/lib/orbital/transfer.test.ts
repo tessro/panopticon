@@ -248,6 +248,7 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
           destinationOrbit: "LowMarsOrbit",
           gameDate: "2028-01-01",
           gridResolution: 50,
+          departureHorizonYears: 1,
           launchAcceleration_mg: ACCELERATION_MG,
           maxDeltaV_kms: MAX_DV_KMS,
         },
@@ -282,9 +283,10 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
     it("optimal transit is near-Hohmann (~260 days)", () => {
       const result = makeGrid();
       expect(result.optimal).not.toBeNull();
-      // Hohmann Earth-Mars is ~259 days; grid optimal should be similar
-      expect(result.optimal!.transitDays).toBeGreaterThan(240);
-      expect(result.optimal!.transitDays).toBeLessThan(280);
+      // Over a wider departure search domain, the coarse grid can prefer a
+      // slightly longer near-Hohmann solution.
+      expect(result.optimal!.transitDays).toBeGreaterThan(220);
+      expect(result.optimal!.transitDays).toBeLessThan(320);
     });
 
     it("probe mode returns a launch-arrival line instead of a 2D grid", () => {
@@ -311,6 +313,80 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       const last = result.probeSeries![result.probeSeries!.length - 1]!;
       expect(last.launchDay).toBeGreaterThan(first.launchDay);
       expect(last.arrivalDay).toBeGreaterThan(first.arrivalDay);
+    });
+
+    it("departure horizon controls the launch-axis span up to 5 years", () => {
+      const shortHorizon = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          departureHorizonYears: 0.5,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+      const longHorizon = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          departureHorizonYears: 5,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+
+      const shortSpanDays = shortHorizon.launchStepDays * Math.max(shortHorizon.grid.length - 1, 1);
+      const longSpanDays = longHorizon.launchStepDays * Math.max(longHorizon.grid.length - 1, 1);
+
+      expect(shortSpanDays).toBeGreaterThan(170);
+      expect(shortSpanDays).toBeLessThan(190);
+      expect(longSpanDays).toBeGreaterThan(1800);
+      expect(longSpanDays).toBeLessThan(1900);
+    });
+
+    it("high-thrust probes significantly reduce probe timeline transit", () => {
+      const baseline = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          departureHorizonYears: 2,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+          probeMode: true,
+          probeHighThrust: false,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+      const highThrust = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          departureHorizonYears: 2,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+          probeMode: true,
+          probeHighThrust: true,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+
+      expect(baseline.optimal).not.toBeNull();
+      expect(highThrust.optimal).not.toBeNull();
+      expect(highThrust.optimal!.transitDays).toBeLessThan(baseline.optimal!.transitDays * 0.7);
     });
 
   });

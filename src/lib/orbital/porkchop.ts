@@ -518,6 +518,7 @@ interface ProbeLineInput {
   startTime_s: number;
   latestLaunchAllowedTime_s: number;
   latestArrivalAllowedTime_s: number;
+  probeDurationScale: number;
   launchStart_s: number;
   launchStep_s: number;
   barycenterMu_m3s2: number;
@@ -535,6 +536,7 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
     startTime_s,
     latestLaunchAllowedTime_s,
     latestArrivalAllowedTime_s,
+    probeDurationScale,
     launchStart_s,
     launchStep_s,
     barycenterMu_m3s2,
@@ -555,7 +557,7 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
 
   for (let i = 0; i < N; i++) {
     const launchTime_s = launchStart_s + i * launchStep_s;
-    const transitDuration_s = probeTransitDuration_s({
+    const rawTransitDuration_s = probeTransitDuration_s({
       launchTime_s,
       hardCap_s: TRANSFER_DURATION_HARD_CAP_S,
       barycenterMu_m3s2,
@@ -564,7 +566,15 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
       destinationOrbitModel,
     });
 
-    if (!transitDuration_s || !Number.isFinite(transitDuration_s) || transitDuration_s <= 0) {
+    if (!rawTransitDuration_s || !Number.isFinite(rawTransitDuration_s) || rawTransitDuration_s <= 0) {
+      const fail = buildFailure(TransferOutcome.Fail_CodePathNotImplemented, 0, 0);
+      failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
+      bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
+      continue;
+    }
+
+    const transitDuration_s = rawTransitDuration_s * probeDurationScale;
+    if (!Number.isFinite(transitDuration_s) || transitDuration_s <= 0) {
       const fail = buildFailure(TransferOutcome.Fail_CodePathNotImplemented, 0, 0);
       failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
       bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
@@ -794,6 +804,12 @@ export function computePorkchopGrid(
   if (!(launchEnd_s > launchStart_s)) {
     launchEnd_s = launchStart_s + SECONDS_PER_DAY;
   }
+  // User-selected horizon controls departure sampling bounds.
+  launchStart_s = startTime_s;
+  launchEnd_s = latestLaunchAllowedTime_s;
+  if (!(launchEnd_s > launchStart_s)) {
+    launchEnd_s = launchStart_s + SECONDS_PER_DAY;
+  }
   const launchStep_s = N > 1 ? (launchEnd_s - launchStart_s) / (N - 1) : 0;
 
   const transitMinFloor_s = isSunBarycenter ? 5 * SECONDS_PER_DAY : 3_600;
@@ -824,11 +840,15 @@ export function computePorkchopGrid(
     : undefined;
 
   if (probeMode) {
+    const probeDurationScale = launchAcceleration_mg > 0
+      ? PROBE_ACCELERATION_MG / launchAcceleration_mg
+      : 1;
     return computeProbeTransferLine({
       N,
       startTime_s,
       latestLaunchAllowedTime_s,
       latestArrivalAllowedTime_s,
+      probeDurationScale,
       launchStart_s,
       launchStep_s,
       barycenterMu_m3s2,

@@ -218,7 +218,7 @@ export function TransferInputsPanel({
             High Thrust Probes
           </span>
           <span className="font-body text-[10px] text-[var(--color-steel)]">
-            Increases the fixed probe acceleration model.
+            Doubles probe thrust in the timeline model (about half transit time).
           </span>
         </div>
       </label>
