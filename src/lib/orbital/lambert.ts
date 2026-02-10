@@ -145,7 +145,6 @@ export function solveLambert(
 
   const lambda2 = Math.max(0, 1 - chord / s);
   let lambda = Math.sqrt(lambda2);
-  const lambda3 = lambda2 * lambda;
 
   let t1hat: Vec3;
   let t2hat: Vec3;
@@ -163,6 +162,9 @@ export function solveLambert(
     t1hat = vecScale(t1hat, -1);
     t2hat = vecScale(t2hat, -1);
   }
+
+  // lambda can flip sign based on geometry/retrograde; keep odd powers signed.
+  const lambda3 = lambda2 * lambda;
 
   const T = Math.sqrt((2 * barycenterMu) / (s * s * s)) * transitTimeSeconds;
   if (!Number.isFinite(T) || T <= 0) return null;

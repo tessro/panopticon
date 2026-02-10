@@ -28,6 +28,8 @@ const G_SI = 6.67384e-11;
 const AU_M = AU_KM * 1000;
 const GM_SUN_M3S2 = GM_SUN_KM * 1e9;
 const SUN_MEAN_RADIUS_M = 695_700_000;
+const SECONDS_PER_DAY = 86_400;
+const SECONDS_PER_YEAR = DAYS_PER_YEAR * SECONDS_PER_DAY;
 
 function emptyResult(): PorkchopResult {
   return {
@@ -104,13 +106,27 @@ function getOrbitRadiusKm(orbit: Orbit, body: SpaceBody): number {
   return body.equatorialRadius_km + 200;
 }
 
-function hohmannFirstBurnDV_mps(r1_m: number, r2_m: number, mu: number): number {
-  return Math.abs(Math.sqrt(mu / r1_m) * (Math.sqrt((2 * r2_m) / (r1_m + r2_m)) - 1));
-}
-
 function hohmannDuration_s(r1_m: number, r2_m: number, mu: number): number {
   const a = (r1_m + r2_m) / 2;
   return Math.PI * Math.sqrt((a * a * a) / mu);
+}
+
+function synodicPeriod_s(r1_m: number, r2_m: number, mu: number): number {
+  if (!(r1_m > 0) || !(r2_m > 0) || !(mu > 0)) return Number.POSITIVE_INFINITY;
+  if (Math.abs(r1_m - r2_m) <= Math.max(r1_m, r2_m) * 1e-12) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const T1 = 2 * Math.PI * Math.sqrt((r1_m * r1_m * r1_m) / mu);
+  const T2 = 2 * Math.PI * Math.sqrt((r2_m * r2_m * r2_m) / mu);
+  if (!Number.isFinite(T1) || !Number.isFinite(T2) || T1 <= 0 || T2 <= 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const maxT = Math.max(T1, T2);
+  const cap = maxT * 10;
+  if (Math.abs(T1 - T2) <= maxT * 1e-6) return cap;
+  return Math.min(Math.abs((T1 * T2) / (T1 - T2)), cap);
 }
 
 function circularStateAtTime(
@@ -195,21 +211,38 @@ export function computePorkchopGrid(
   const startJY = dateToJY(startDate);
   const startTime_s = startDateValue / 1000;
 
-  const minAllowedDuration_s = hohmannDuration_s(
+  const hohmannTransferDuration_s = hohmannDuration_s(
     originRadius_m,
     destinationRadius_m,
     barycenterMu_m3s2,
   );
-  const firstBurnDuration_s =
-    hohmannFirstBurnDV_mps(originRadius_m, destinationRadius_m, barycenterMu_m3s2) /
-    fleetAcceleration_mps2;
-  const launchOffset_s = Number.isFinite(firstBurnDuration_s)
-    ? firstBurnDuration_s * 0.6
-    : 0;
+  const synodic_s = synodicPeriod_s(
+    originRadius_m,
+    destinationRadius_m,
+    barycenterMu_m3s2,
+  );
 
-  const launchStep_s = isSunBarycenter ? 864_000 : 43_200;
-  const transitStep_s = isSunBarycenter ? 604_800 : 21_600;
-  const launchStart_s = startTime_s + launchOffset_s;
+  const launchSpanCap_s = isSunBarycenter ? 3 * SECONDS_PER_YEAR : 120 * SECONDS_PER_DAY;
+  const launchSpan_s = Math.min(
+    Number.isFinite(synodic_s) && synodic_s > 0 ? synodic_s : launchSpanCap_s,
+    launchSpanCap_s,
+  );
+  const launchStep_s = N > 1 ? launchSpan_s / (N - 1) : 0;
+  const launchStart_s = startTime_s;
+
+  const transitMinFloor_s = isSunBarycenter ? 5 * SECONDS_PER_DAY : 3_600;
+  const minTransit_s = Math.max(transitMinFloor_s, hohmannTransferDuration_s * 0.3);
+  const transitSpanCap_s = isSunBarycenter ? 3 * SECONDS_PER_YEAR : 120 * SECONDS_PER_DAY;
+  const synodicTransitCap_s =
+    Number.isFinite(synodic_s) && synodic_s > 0 ? synodic_s * 0.9 : transitSpanCap_s;
+  const maxTransitTarget_s = Math.min(
+    transitSpanCap_s,
+    synodicTransitCap_s,
+    hohmannTransferDuration_s * 3,
+  );
+  const transitStepFloor_s = isSunBarycenter ? SECONDS_PER_DAY : 1_800;
+  const maxTransit_s = Math.max(minTransit_s + transitStepFloor_s, maxTransitTarget_s);
+  const transitStep_s = N > 1 ? (maxTransit_s - minTransit_s) / (N - 1) : 0;
 
   const grid: (PorkchopCell | null)[][] = [];
   let minDV = Number.POSITIVE_INFINITY;
@@ -224,7 +257,7 @@ export function computePorkchopGrid(
     const launchTime_s = launchStart_s + i * launchStep_s;
 
     for (let j = 0; j < N; j++) {
-      const transitDuration_s = minAllowedDuration_s + j * transitStep_s;
+      const transitDuration_s = minTransit_s + j * transitStep_s;
       const arrivalTime_s = launchTime_s + transitDuration_s;
 
       const sourceState_m = useLocalCircularModel
@@ -302,7 +335,7 @@ export function computePorkchopGrid(
     optimal,
     launchStartDay: launchStart_s / 86400,
     launchStepDays: launchStep_s / 86400,
-    minTransitDays: minAllowedDuration_s / 86400,
+    minTransitDays: minTransit_s / 86400,
     transitStepDays: transitStep_s / 86400,
     failureCounts,
     bestFailureOutcome: bestFailure?.outcome ?? null,
