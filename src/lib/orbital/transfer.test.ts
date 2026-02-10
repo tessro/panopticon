@@ -133,6 +133,11 @@ const GAME_SOLUTIONS = {
     { dV_kps: 22.0, launch: "2028-05-19T12:24:00Z", arrival: "2029-01-20T11:30:00Z" },
     { dV_kps: 20.7, launch: "2028-06-02T12:21:00Z", arrival: "2029-02-10T13:20:00Z" },
   ],
+  /** Mid-window transfers */
+  midWindow: [
+    { dV_kps: 12.1, launch: "2028-12-01T22:40:00Z", arrival: "2029-06-03T10:26:00Z" },
+    { dV_kps: 7.7, launch: "2028-12-09T07:55:00Z", arrival: "2029-07-22T07:14:00Z" },
+  ],
   /** Near-Hohmann optimal transfers (best dV) */
   optimal: [
     { dV_kps: 6.0, launch: "2028-11-19T23:24:00Z", arrival: "2029-09-11T10:36:00Z" },
@@ -224,6 +229,18 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
         const offset = heliocentricDV - sol.dV_kps;
         expect(offset).toBeGreaterThan(1.0);
         expect(offset).toBeLessThan(3.0);
+      });
+    }
+
+    // Near-optimal transfers: the heliocentric/game offset is small and can
+    // go either direction. High v_inf → heliocentric is higher (no Oberth).
+    // Low v_inf → game is slightly higher (spiral overhead exceeds savings).
+    for (const sol of GAME_SOLUTIONS.midWindow) {
+      it(`mid-window: heliocentric ≈ game's ${sol.dV_kps} km/s (launch ${sol.launch.slice(0, 10)})`, () => {
+        const result = solveLambertAtDates(sol.launch, sol.arrival);
+        expect(result.result.outcome).toBe(TransferOutcome.Success);
+        const heliocentricDV = result.totalDV_mps / 1000;
+        expect(Math.abs(heliocentricDV - sol.dV_kps)).toBeLessThan(1.0);
       });
     }
 
