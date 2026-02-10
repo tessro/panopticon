@@ -289,5 +289,6 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(result.optimal!.transitDays).toBeGreaterThan(240);
       expect(result.optimal!.transitDays).toBeLessThan(280);
     });
+
   });
 });

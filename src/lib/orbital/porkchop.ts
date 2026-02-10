@@ -598,6 +598,50 @@ export function computePorkchopGrid(
 
   if (!Number.isFinite(minDV)) minDV = 0;
 
+  // Refinement pass: re-scan a small neighborhood around the coarse optimal
+  // with finer resolution to find the precise minimum.
+  if (optimal) {
+    const refineN = 20;
+    const refLaunchCenter_s = optimal.launchDay * SECONDS_PER_DAY;
+    const refTransitCenter_s = optimal.transitDays * SECONDS_PER_DAY;
+    const refLaunchHalf_s = launchStep_s;
+    const refTransitHalf_s = transitStep_s;
+    const refLaunchStart_s = Math.max(startTime_s, refLaunchCenter_s - refLaunchHalf_s);
+    const refLaunchEnd_s = Math.min(latestAllowedTime_s, refLaunchCenter_s + refLaunchHalf_s);
+    const refTransitMin_s = Math.max(transitMinFloor_s, refTransitCenter_s - refTransitHalf_s);
+    const refTransitMax_s = Math.min(TRANSFER_DURATION_HARD_CAP_S, refTransitCenter_s + refTransitHalf_s);
+    const refLaunchStep_s = (refLaunchEnd_s - refLaunchStart_s) / (refineN - 1);
+    const refTransitStep_s = (refTransitMax_s - refTransitMin_s) / (refineN - 1);
+
+    for (let i = 0; i < refineN; i++) {
+      const lt = refLaunchStart_s + i * refLaunchStep_s;
+      for (let j = 0; j < refineN; j++) {
+        const tt = refTransitMin_s + j * refTransitStep_s;
+        const at = lt + tt;
+        const src = originOrbitModel.stateAtTime(lt);
+        const dst = destinationOrbitModel.stateAtTime(at);
+        const sol = solveTwoBurnLambertTransfer({
+          launchTime_s: lt,
+          arrivalTime_s: at,
+          sourceState_m: src,
+          destinationState_m: dst,
+          barycenterMu_m3s2,
+          barycenterMeanRadius_m,
+          fleetAcceleration_mps2,
+        });
+        if (sol.result.outcome !== TransferOutcome.Success) continue;
+        if (sol.launchTime_s < startTime_s) continue;
+        if (sol.totalDV_mps / 1000 > dvCap_kms) continue;
+        if (sol.transferOrbit && sol.transferOrbit.eccentricity >= 1) continue;
+        const cell = transferSolutionToCell(sol);
+        if (cell.totalDV < minDV) {
+          minDV = cell.totalDV;
+          optimal = cell;
+        }
+      }
+    }
+  }
+
   return {
     grid,
     minDV,
