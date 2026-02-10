@@ -90,6 +90,10 @@ function bodyStateSI(body: SpaceBody, dateStr: string) {
   return toSIState(bodyStateAt(body, dateToJY(new Date(dateStr))));
 }
 
+function bodyStateSIAtUnix(body: SpaceBody, time_s: number) {
+  return toSIState(bodyStateAt(body, dateToJY(new Date(time_s * 1000))));
+}
+
 function solveLambertAtDates(launchDate: string, arrivalDate: string) {
   const launchTime_s = Date.parse(launchDate) / 1000;
   const arrivalTime_s = Date.parse(arrivalDate) / 1000;
@@ -102,6 +106,10 @@ function solveLambertAtDates(launchDate: string, arrivalDate: string) {
     barycenterMu_m3s2: GM_SUN_M3S2,
     barycenterMeanRadius_m: SUN_MEAN_RADIUS_M,
     fleetAcceleration_mps2: FLEET_ACCEL_MPS2,
+    hybridRemap: {
+      sourceStateAtTime: (time_s) => bodyStateSIAtUnix(EARTH, time_s),
+      destinationStateAtTime: (time_s) => bodyStateSIAtUnix(MARS, time_s),
+    },
   });
 }
 
@@ -115,15 +123,9 @@ const FLEET_ACCEL_MPS2 = (ACCELERATION_MG * STANDARD_GRAVITY_MPS2) / 1000;
  * In-game solutions for LEO1 → LMO, 3000 milligees, 25 kps budget.
  * Game date: 01 January 2028 00:00.
  *
- * The game uses an impulse-microthrust hybrid model that combines
- * impulsive heliocentric Lambert burns with microthrust spirals for
- * SOI escape/capture. Our solver is pure heliocentric Lambert, so
- * we expect systematic offsets:
- *
- * - Early-window: ~2 km/s higher (microthrust saves some SOI dV)
- * - Optimal: game dates include ~46d of spiral time, so the Lambert
- *   transit is shorter than (arrival - launch); evaluating Lambert at
- *   the game's outer dates gives wrong results.
+ * These samples are used as strict parity checks. The transfer solver
+ * now runs a hybrid remap path (when contextual ephemeris callbacks are
+ * provided) before solving Lambert/Torch, so these values should match.
  */
 const GAME_SOLUTIONS = {
   /** High-dV early transfers (first shown in game list) */

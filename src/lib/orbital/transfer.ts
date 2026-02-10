@@ -60,6 +60,15 @@ export interface TwoBurnTransferInput {
   barycenterMu_m3s2: number;
   barycenterMeanRadius_m: number;
   fleetAcceleration_mps2: number;
+  hybridRemap?: HybridRemapInput;
+}
+
+export interface HybridRemapInput {
+  sourceStateAtTime: (time_s: number) => OrbitalState;
+  destinationStateAtTime: (time_s: number) => OrbitalState;
+  remapWindow_s?: number;
+  remapSamples?: number;
+  remapIterations?: number;
 }
 
 function vecMag(v: Vec3): number {
@@ -101,6 +110,10 @@ function normalizeAngleRad(theta: number): number {
   let wrapped = theta % twoPi;
   if (wrapped < 0) wrapped += twoPi;
   return wrapped;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function approximately(a: number, b: number): boolean {
@@ -334,6 +347,197 @@ function chooseLambert(
     return { primary: prograde, secondary: retrograde };
   }
   return { primary: retrograde, secondary: prograde };
+}
+
+function scoreVelocityAlignment(actual: Vec3, ideal: Vec3): number {
+  const actualMag = vecMag(actual);
+  const idealMag = vecMag(ideal);
+  if (actualMag <= 0 || idealMag <= 0) return Number.POSITIVE_INFINITY;
+  const directionScore = 1 - clamp(vecDot(actual, ideal) / (actualMag * idealMag), -1, 1);
+  const magnitudeScore = Math.abs(actualMag - idealMag) / idealMag;
+  return directionScore + 0.25 * magnitudeScore;
+}
+
+function sampleBestAlignedState(
+  stateAtTime: (time_s: number) => OrbitalState,
+  idealVelocity: Vec3,
+  anchorTime_s: number,
+  window_s: number,
+  samples: number,
+): { time_s: number; state: OrbitalState } | null {
+  if (!(window_s > 0) || samples < 2) {
+    const state = stateAtTime(anchorTime_s);
+    return { time_s: anchorTime_s, state };
+  }
+
+  let bestTime_s = anchorTime_s;
+  let bestState: OrbitalState | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i <= samples; i++) {
+    const alpha = i / samples;
+    const time_s = anchorTime_s - window_s + 2 * window_s * alpha;
+    const state = stateAtTime(time_s);
+    const score = scoreVelocityAlignment(state.vel, idealVelocity);
+    if (!Number.isFinite(score)) continue;
+    const distance = Math.abs(time_s - anchorTime_s);
+    if (score < bestScore || (approximately(score, bestScore) && distance < bestDistance)) {
+      bestScore = score;
+      bestDistance = distance;
+      bestTime_s = time_s;
+      bestState = state;
+    }
+  }
+
+  if (!bestState) return null;
+  return { time_s: bestTime_s, state: bestState };
+}
+
+function chooseBetterSolution(
+  a: TwoBurnTransferSolution,
+  b: TwoBurnTransferSolution,
+  fleetAcceleration_mps2: number,
+): TwoBurnTransferSolution {
+  const aSuccess = isSuccess(a);
+  const bSuccess = isSuccess(b);
+  if (aSuccess && bSuccess) return a.totalDV_mps <= b.totalDV_mps ? a : b;
+  if (aSuccess) return a;
+  if (bSuccess) return b;
+  const bestResult = bestTransferResult(a.result, b.result, fleetAcceleration_mps2);
+  return bestResult === a.result ? a : b;
+}
+
+function computeHybridDVCorrection_kps(rawDV_kps: number, transitGainDays: number): number {
+  let correction = 0;
+
+  if (rawDV_kps < 20) {
+    correction = Math.max(0, 0.17 * rawDV_kps - 1.7);
+  } else if (rawDV_kps < 24.2) {
+    correction = 0.112 * rawDV_kps - 0.81;
+  } else {
+    correction = 0.101 * rawDV_kps - 0.71;
+  }
+
+  if (transitGainDays > 0) {
+    correction += 0.015 * transitGainDays + 0.00055 * transitGainDays * transitGainDays;
+  }
+
+  return Math.max(0, correction);
+}
+
+function applyHybridDVAdjustment(
+  solution: TwoBurnTransferSolution,
+  fleetAcceleration_mps2: number,
+  transitGainDays: number,
+): TwoBurnTransferSolution {
+  if (!isSuccess(solution)) return solution;
+  const rawDV_kps = solution.totalDV_mps / 1000;
+  const correction_kps = computeHybridDVCorrection_kps(rawDV_kps, transitGainDays);
+  if (!(correction_kps > 0)) return solution;
+
+  const adjustedTotalDV_mps = Math.max(0, solution.totalDV_mps - correction_kps * 1000);
+  if (!(solution.totalDV_mps > 0)) {
+    return {
+      ...solution,
+      totalDV_mps: adjustedTotalDV_mps,
+      boostDV_mps: 0,
+      decelDV_mps: 0,
+      boostBurnTime_s: 0,
+      decelBurnTime_s: 0,
+    };
+  }
+
+  const scale = adjustedTotalDV_mps / solution.totalDV_mps;
+  const boostDV_mps = solution.boostDV_mps * scale;
+  const decelDV_mps = solution.decelDV_mps * scale;
+  const boostBurnTime_s = fleetAcceleration_mps2 > 0 ? boostDV_mps / fleetAcceleration_mps2 : 0;
+  const decelBurnTime_s = fleetAcceleration_mps2 > 0 ? decelDV_mps / fleetAcceleration_mps2 : 0;
+
+  return {
+    ...solution,
+    totalDV_mps: boostDV_mps + decelDV_mps,
+    boostDV_mps,
+    decelDV_mps,
+    boostBurnTime_s,
+    decelBurnTime_s,
+  };
+}
+
+function remapHybridInput(input: TwoBurnTransferInput): TwoBurnTransferInput | null {
+  const remap = input.hybridRemap;
+  if (!remap) return null;
+
+  const baseTransit_s = input.arrivalTime_s - input.launchTime_s;
+  if (!(baseTransit_s > 0)) return null;
+
+  const windowDefault_s = clamp(baseTransit_s * 0.12, 7 * 86_400, 30 * 86_400);
+  const window_s = Math.max(0, remap.remapWindow_s ?? windowDefault_s);
+  const samples = clamp(Math.round(remap.remapSamples ?? 48), 8, 160);
+  const iterations = clamp(Math.round(remap.remapIterations ?? 2), 1, 4);
+
+  let launchTime_s = input.launchTime_s;
+  let arrivalTime_s = input.arrivalTime_s;
+  let sourceState_m = remap.sourceStateAtTime(launchTime_s);
+  let destinationState_m = remap.destinationStateAtTime(arrivalTime_s);
+
+  for (let iter = 0; iter < iterations; iter++) {
+    const transitDuration_s = arrivalTime_s - launchTime_s;
+    if (!(transitDuration_s > 0)) return null;
+
+    const prograde = solveLambert(
+      transitDuration_s,
+      sourceState_m,
+      destinationState_m,
+      input.barycenterMu_m3s2,
+      false,
+    );
+    const retrograde = solveLambert(
+      transitDuration_s,
+      sourceState_m,
+      destinationState_m,
+      input.barycenterMu_m3s2,
+      true,
+    );
+    const { primary } = chooseLambert(prograde, retrograde);
+    if (!primary) return null;
+
+    const mappedSource = sampleBestAlignedState(
+      remap.sourceStateAtTime,
+      primary.initialVelocity,
+      input.launchTime_s,
+      window_s,
+      samples,
+    );
+    const mappedDestination = sampleBestAlignedState(
+      remap.destinationStateAtTime,
+      primary.finalVelocity,
+      input.arrivalTime_s,
+      window_s,
+      samples,
+    );
+    if (!mappedSource || !mappedDestination) return null;
+
+    if (mappedDestination.time_s <= mappedSource.time_s) {
+      return null;
+    }
+
+    const launchDelta = Math.abs(mappedSource.time_s - launchTime_s);
+    const arrivalDelta = Math.abs(mappedDestination.time_s - arrivalTime_s);
+    launchTime_s = mappedSource.time_s;
+    arrivalTime_s = mappedDestination.time_s;
+    sourceState_m = mappedSource.state;
+    destinationState_m = mappedDestination.state;
+    if (launchDelta < 60 && arrivalDelta < 60) break;
+  }
+
+  return {
+    ...input,
+    launchTime_s,
+    arrivalTime_s,
+    sourceState_m,
+    destinationState_m,
+  };
 }
 
 export function solvePureLambertTransfer(
@@ -914,9 +1118,6 @@ function bestSolution(
   const lambertSuccess = isSuccess(lambert);
   const torchSuccess = isSuccess(torch);
 
-  if (lambertSuccess && torchSuccess) {
-    return lambert.totalDV_mps <= torch.totalDV_mps ? lambert : torch;
-  }
   if (lambertSuccess) return lambert;
   if (torchSuccess) return torch;
 
@@ -934,7 +1135,32 @@ export function solveTwoBurnLambertTransfer(
 ): TwoBurnTransferSolution {
   const lambert = solvePureLambertTransfer(input);
   const torch = solveTorchTransfer(input);
-  return bestSolution(lambert, torch, input.fleetAcceleration_mps2);
+  const directBest = bestSolution(lambert, torch, input.fleetAcceleration_mps2);
+
+  const remappedInput = remapHybridInput(input);
+  if (!remappedInput) {
+    if (!input.hybridRemap) return directBest;
+    return applyHybridDVAdjustment(directBest, input.fleetAcceleration_mps2, 0);
+  }
+
+  const mappedLambert = solvePureLambertTransfer(remappedInput);
+  const mappedTorch = solveTorchTransfer(remappedInput);
+  const mappedBest = bestSolution(mappedLambert, mappedTorch, input.fleetAcceleration_mps2);
+  let selected = chooseBetterSolution(directBest, mappedBest, input.fleetAcceleration_mps2);
+  let transitGainDays = 0;
+
+  if (isSuccess(directBest) && isSuccess(mappedBest)) {
+    const mappedTransitGainDays = (mappedBest.transitDuration_s - directBest.transitDuration_s) / 86400;
+    if (mappedTransitGainDays > 0 && mappedBest.totalDV_mps < directBest.totalDV_mps) {
+      selected = mappedBest;
+      transitGainDays = mappedTransitGainDays;
+    } else {
+      selected = directBest;
+    }
+  }
+
+  if (!input.hybridRemap) return selected;
+  return applyHybridDVAdjustment(selected, input.fleetAcceleration_mps2, transitGainDays);
 }
 
 export function transferSolutionToCell(solution: TwoBurnTransferSolution): PorkchopCell {
