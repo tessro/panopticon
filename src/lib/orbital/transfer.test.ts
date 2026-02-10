@@ -233,15 +233,19 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       });
     }
 
-    // Near-optimal transfers: the heliocentric/game offset is small and can
-    // go either direction. High v_inf → heliocentric is higher (no Oberth).
-    // Low v_inf → game is slightly higher (spiral overhead exceeds savings).
+    // Mid-window transfers: the heliocentric/game offset shrinks as dV
+    // decreases, crossing zero near the optimal. The offset tracks the
+    // v_inf-dependent Oberth savings the game's hybrid model captures.
+    // Offset ≈ +0.9 at 14 km/s, +0.4 at 12 km/s, −0.1 at 8 km/s.
     for (const sol of GAME_SOLUTIONS.midWindow) {
       it(`mid-window: heliocentric ≈ game's ${sol.dV_kps} km/s (launch ${sol.launch.slice(0, 10)})`, () => {
         const result = solveLambertAtDates(sol.launch, sol.arrival);
         expect(result.result.outcome).toBe(TransferOutcome.Success);
         const heliocentricDV = result.totalDV_mps / 1000;
-        expect(Math.abs(heliocentricDV - sol.dV_kps)).toBeLessThan(1.0);
+        const offset = heliocentricDV - sol.dV_kps;
+        // Offset should be between −0.2 and +1.0 for this dV range
+        expect(offset).toBeGreaterThan(-0.2);
+        expect(offset).toBeLessThan(1.0);
       });
     }
 
