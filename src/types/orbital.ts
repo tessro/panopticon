@@ -62,6 +62,10 @@ export interface TransferInputs {
   gridResolution: number;
   launchAcceleration_mg: number;
   maxDeltaV_kms: number;
+  /** Probe-mode transfer assumptions (launched from Earth, uncapped dV) */
+  probeMode?: boolean;
+  /** Whether high-thrust probe assumptions are enabled */
+  probeHighThrust?: boolean;
 }
 
 export interface PorkchopResult {

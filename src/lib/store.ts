@@ -54,6 +54,10 @@ interface AppState {
   setTransferLaunchAcceleration: (acceleration: number) => void;
   transferMaxDeltaV: number;
   setTransferMaxDeltaV: (deltaV: number) => void;
+  transferProbeMode: boolean;
+  setTransferProbeMode: (enabled: boolean) => void;
+  transferProbeHighThrust: boolean;
+  setTransferProbeHighThrust: (enabled: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -90,6 +94,11 @@ export const useAppStore = create<AppState>()(
       transferMaxDeltaV: 50,
       setTransferMaxDeltaV: (deltaV) =>
         set({ transferMaxDeltaV: clampMaxDeltaV(deltaV) }),
+      transferProbeMode: false,
+      setTransferProbeMode: (enabled) => set({ transferProbeMode: enabled }),
+      transferProbeHighThrust: false,
+      setTransferProbeHighThrust: (enabled) =>
+        set({ transferProbeHighThrust: enabled }),
     }),
     { name: "panopticon-app" },
   ),

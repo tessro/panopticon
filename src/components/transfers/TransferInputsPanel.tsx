@@ -40,12 +40,16 @@ export function TransferInputsPanel({
   const setLaunchAcceleration = useAppStore((s) => s.setTransferLaunchAcceleration);
   const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
   const setMaxDeltaV = useAppStore((s) => s.setTransferMaxDeltaV);
+  const probeMode = useAppStore((s) => s.transferProbeMode);
+  const setProbeMode = useAppStore((s) => s.setTransferProbeMode);
+  const probeHighThrust = useAppStore((s) => s.transferProbeHighThrust);
+  const setProbeHighThrust = useAppStore((s) => s.setTransferProbeHighThrust);
 
   const hasValidDate = isValidGameDate(gameDate);
   const canCompute = Boolean(
-    originOrbit &&
     destOrbit &&
-    originOrbit !== destOrbit &&
+    (probeMode || originOrbit) &&
+    (probeMode || originOrbit !== destOrbit) &&
     hasValidDate &&
     !isComputing,
   );
@@ -120,13 +124,14 @@ export function TransferInputsPanel({
           max={100000}
           step={1}
           value={launchAcceleration}
+          disabled={probeMode}
           onChange={(e) => {
             const next = Number.parseFloat(e.target.value);
             if (!Number.isNaN(next)) {
               setLaunchAcceleration(next);
             }
           }}
-          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
+          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-[var(--color-cyan-dim)]"
         />
         <p className="mt-1 font-body text-[10px] text-[var(--color-steel)]">
           Used as fixed ship acceleration for boost/capture burn duration checks.
@@ -143,15 +148,57 @@ export function TransferInputsPanel({
           max={500}
           step={0.5}
           value={maxDeltaV}
+          disabled={probeMode}
           onChange={(e) => {
             const next = Number.parseFloat(e.target.value);
             if (!Number.isNaN(next)) {
               setMaxDeltaV(next);
             }
           }}
-          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
+          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none disabled:cursor-not-allowed disabled:opacity-50 focus:border-[var(--color-cyan-dim)]"
         />
       </div>
+
+      <label className="flex items-center gap-2 rounded border border-[var(--color-slate)] bg-[var(--color-deep)]/40 px-2 py-2">
+        <input
+          type="checkbox"
+          checked={probeMode}
+          onChange={(e) => setProbeMode(e.target.checked)}
+          className="h-4 w-4 accent-[var(--color-cyan)]"
+        />
+        <div className="flex flex-col">
+          <span className="font-display text-xs tracking-wide text-[var(--color-light)] uppercase">
+            Probe Mode
+          </span>
+          <span className="font-body text-[10px] text-[var(--color-steel)]">
+            Uses Earth launch assumptions and uncapped transfer dV.
+          </span>
+        </div>
+      </label>
+
+      {probeMode && (
+        <p className="font-body text-[10px] text-[var(--color-steel)]">
+          Probe mode always launches from Low Earth Orbit 1 and ignores the Max ΔV cap.
+        </p>
+      )}
+
+      <label className="flex items-center gap-2 rounded border border-[var(--color-slate)] bg-[var(--color-deep)]/40 px-2 py-2">
+        <input
+          type="checkbox"
+          checked={probeHighThrust}
+          disabled={!probeMode}
+          onChange={(e) => setProbeHighThrust(e.target.checked)}
+          className="h-4 w-4 accent-[var(--color-cyan)] disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        <div className="flex flex-col">
+          <span className="font-display text-xs tracking-wide text-[var(--color-light)] uppercase">
+            High Thrust Probes
+          </span>
+          <span className="font-body text-[10px] text-[var(--color-steel)]">
+            Increases the fixed probe acceleration model.
+          </span>
+        </div>
+      </label>
 
       <Button
         onClick={onCompute}

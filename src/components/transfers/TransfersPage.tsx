@@ -16,18 +16,32 @@ export function TransfersPage() {
   const gridResolution = useAppStore((s) => s.transferGridResolution);
   const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
   const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
+  const probeMode = useAppStore((s) => s.transferProbeMode);
+  const probeHighThrust = useAppStore((s) => s.transferProbeHighThrust);
 
   const inputs = useMemo<TransferInputs | null>(() => {
-    if (!originOrbit || !destOrbit) return null;
+    if (!destOrbit) return null;
+    if (!probeMode && !originOrbit) return null;
     return {
-      originOrbit,
+      originOrbit: originOrbit ?? "LowEarthOrbit1",
       destinationOrbit: destOrbit,
       gameDate,
       gridResolution,
       launchAcceleration_mg: launchAcceleration,
       maxDeltaV_kms: maxDeltaV,
+      probeMode,
+      probeHighThrust,
     };
-  }, [originOrbit, destOrbit, gameDate, gridResolution, launchAcceleration, maxDeltaV]);
+  }, [
+    originOrbit,
+    destOrbit,
+    gameDate,
+    gridResolution,
+    launchAcceleration,
+    maxDeltaV,
+    probeMode,
+    probeHighThrust,
+  ]);
 
   const { result, isComputing, compute } = usePorkchop(
     inputs,

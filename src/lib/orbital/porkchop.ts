@@ -41,6 +41,9 @@ const HYBRID_REMAP_WINDOW_S = 12 * SECONDS_PER_DAY;
 const HYBRID_REMAP_SAMPLES = 48;
 const HYBRID_REMAP_ITERATIONS = 2;
 const GRID_RESOLUTION_MAX = 300;
+const PROBE_DEFAULT_ORIGIN_ORBIT = "LowEarthOrbit1";
+const PROBE_ACCELERATION_MG = 3000;
+const PROBE_HIGH_THRUST_ACCELERATION_MG = 6000;
 
 function emptyResult(): PorkchopResult {
   return {
@@ -349,6 +352,16 @@ function findOrbitBody(orbit: Orbit, bodies: SpaceBody[]): SpaceBody | null {
   return bodies.find((b) => b.name === orbit.barycenter) ?? null;
 }
 
+function findProbeOriginOrbit(orbits: Orbit[]): Orbit | null {
+  return (
+    orbits.find((o) => o.name === PROBE_DEFAULT_ORIGIN_ORBIT) ??
+    orbits.find((o) => o.orbitIndex === "Earth1") ??
+    orbits.find((o) => o.barycenter === "Earth" && o.interfaceOrbit) ??
+    orbits.find((o) => o.barycenter === "Earth") ??
+    null
+  );
+}
+
 function getOrbitRadiusKm(orbit: Orbit, body: SpaceBody): number {
   if (orbit.altitude_km != null) return body.equatorialRadius_km + orbit.altitude_km;
   if (orbit.semiMajorAxis_km != null) return orbit.semiMajorAxis_km;
@@ -404,7 +417,11 @@ export function computePorkchopGrid(
   bodies: SpaceBody[],
   orbits: Orbit[],
 ): PorkchopResult {
-  const originOrbit = orbits.find((o) => o.name === inputs.originOrbit);
+  const probeMode = inputs.probeMode === true;
+  const probeHighThrust = inputs.probeHighThrust === true;
+  const originOrbit = probeMode
+    ? findProbeOriginOrbit(orbits)
+    : orbits.find((o) => o.name === inputs.originOrbit);
   const destOrbit = orbits.find((o) => o.name === inputs.destinationOrbit);
   if (!originOrbit || !destOrbit) return emptyResult();
 
@@ -419,13 +436,16 @@ export function computePorkchopGrid(
   if (!Number.isFinite(startDateValue)) return emptyResult();
 
   const N = Math.max(20, Math.min(GRID_RESOLUTION_MAX, Math.floor(inputs.gridResolution)));
-  const launchAcceleration_mg = Number.isFinite(inputs.launchAcceleration_mg)
-    ? Math.max(0, inputs.launchAcceleration_mg)
-    : 0;
+  const launchAcceleration_mg = probeMode
+    ? (probeHighThrust ? PROBE_HIGH_THRUST_ACCELERATION_MG : PROBE_ACCELERATION_MG)
+    : Number.isFinite(inputs.launchAcceleration_mg)
+      ? Math.max(0, inputs.launchAcceleration_mg)
+      : 0;
   const fleetAcceleration_mps2 =
     (launchAcceleration_mg * STANDARD_GRAVITY_MPS2) / 1000;
-  const dvCap_kms =
-    Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
+  const dvCap_kms = probeMode
+    ? Number.POSITIVE_INFINITY
+    : Number.isFinite(inputs.maxDeltaV_kms) && inputs.maxDeltaV_kms > 0
       ? inputs.maxDeltaV_kms
       : Number.POSITIVE_INFINITY;
 
