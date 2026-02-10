@@ -40,6 +40,7 @@ const J2000_UNIX_S = J2000_DATE.getTime() / 1000;
 const HYBRID_REMAP_WINDOW_S = 12 * SECONDS_PER_DAY;
 const HYBRID_REMAP_SAMPLES = 48;
 const HYBRID_REMAP_ITERATIONS = 2;
+const GRID_RESOLUTION_MAX = 300;
 
 function emptyResult(): PorkchopResult {
   return {
@@ -417,7 +418,7 @@ export function computePorkchopGrid(
   const startDateValue = Date.parse(`${inputs.gameDate}T00:00:00Z`);
   if (!Number.isFinite(startDateValue)) return emptyResult();
 
-  const N = Math.max(20, Math.min(150, Math.floor(inputs.gridResolution)));
+  const N = Math.max(20, Math.min(GRID_RESOLUTION_MAX, Math.floor(inputs.gridResolution)));
   const launchAcceleration_mg = Number.isFinite(inputs.launchAcceleration_mg)
     ? Math.max(0, inputs.launchAcceleration_mg)
     : 0;

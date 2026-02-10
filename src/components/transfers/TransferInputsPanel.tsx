@@ -97,8 +97,8 @@ export function TransferInputsPanel({
         <input
           type="number"
           min={20}
-          max={150}
-          step={10}
+          max={300}
+          step={5}
           value={gridResolution}
           onChange={(e) => {
             const next = Number.parseInt(e.target.value, 10);

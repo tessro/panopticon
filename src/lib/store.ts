@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const GRID_RESOLUTION_MIN = 20;
-const GRID_RESOLUTION_MAX = 150;
+const GRID_RESOLUTION_MAX = 300;
 const LAUNCH_ACCELERATION_MG_MIN = 0;
 const LAUNCH_ACCELERATION_MG_MAX = 100000;
 const MAX_DELTA_V_MIN = 0.1;
