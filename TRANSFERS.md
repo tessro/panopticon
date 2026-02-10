@@ -396,23 +396,3 @@ and SOI transitions between barycenters.
 **`Trajectory_Microthrust`** — continuous low-thrust spiral paths
 
 ---
-
-## Differences from Our Implementation
-
-Our transfer planner (`src/lib/orbital/`) uses:
-- **Universal variable** Lambert solver with Stumpff functions + bisection-assisted Newton
-- **AU + AU/yr** units with GM_SUN = 4π²
-- Web worker porkchop grid
-
-The game uses:
-- **Izzo (2014) Lambert solver** with Householder iteration on the λ-parameterization
-- **SI units** (meters, seconds) throughout
-- Hohmann windows as search anchors, Lambert sweep around each window
-- Hybrid impulsive + microthrust transfers
-- Patched conics for multi-SOI trajectories
-- Body-specific μ = G·M (not a single solar GM)
-
-The Izzo solver is generally considered faster and more robust than universal
-variable approaches, particularly for multi-revolution cases and near-parabolic
-transfers. The 3rd-order Householder iteration converges in ~3–5 steps vs our
-bisection-assisted Newton which may need 30+.
