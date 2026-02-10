@@ -47,6 +47,8 @@ const PROBE_HIGH_THRUST_ACCELERATION_MG = 6000;
 
 function emptyResult(): PorkchopResult {
   return {
+    chartType: "porkchop",
+    probeSeries: [],
     grid: [],
     minDV: 0,
     maxDV: 0,
@@ -373,6 +375,30 @@ function hohmannDuration_s(r1_m: number, r2_m: number, mu: number): number {
   return Math.PI * Math.sqrt((a * a * a) / mu);
 }
 
+function lagrangeTransferDuration_s(
+  transferBarycenterMu_m3s2: number,
+  radius_m: number,
+  angle_deg: number,
+): number {
+  const orbitalPeriod_s = TWO_PI * Math.sqrt((radius_m * radius_m * radius_m) / transferBarycenterMu_m3s2);
+  const n = angle_deg >= 90 ? 2 : 1;
+  return orbitalPeriod_s * (n - angle_deg / 360);
+}
+
+function angleBetweenOrbitModels_deg(
+  originOrbitModel: OrbitModel,
+  destinationOrbitModel: OrbitModel,
+  t_s: number,
+): number {
+  const a = originOrbitModel.stateAtTime(t_s).pos;
+  const b = destinationOrbitModel.stateAtTime(t_s).pos;
+  const magA = Math.sqrt(vecDot(a, a));
+  const magB = Math.sqrt(vecDot(b, b));
+  if (!(magA > 0) || !(magB > 0)) return 0;
+  const cosTheta = Math.max(-1, Math.min(1, vecDot(a, b) / (magA * magB)));
+  return (Math.acos(cosTheta) * 180) / Math.PI;
+}
+
 function synodicPeriod_s(r1_m: number, r2_m: number, mu: number): number {
   if (!(r1_m > 0) || !(r2_m > 0) || !(mu > 0)) return Number.POSITIVE_INFINITY;
   if (Math.abs(r1_m - r2_m) <= Math.max(r1_m, r2_m) * 1e-12) {
@@ -410,6 +436,226 @@ function circularStateAtTime(
 
 function buildFailure(outcome: TransferOutcome, value = 0, value2 = 0): TITransferResult {
   return { outcome, value, value2 };
+}
+
+interface ProbeTransitDurationInput {
+  launchTime_s: number;
+  hardCap_s: number;
+  barycenterMu_m3s2: number;
+  isSunBarycenter: boolean;
+  originOrbitModel: OrbitModel;
+  destinationOrbitModel: OrbitModel;
+}
+
+function probeTransitDuration_s(input: ProbeTransitDurationInput): number | null {
+  const {
+    launchTime_s,
+    hardCap_s,
+    barycenterMu_m3s2,
+    isSunBarycenter,
+    originOrbitModel,
+    destinationOrbitModel,
+  } = input;
+
+  const startRadius_m = originOrbitModel.semiMajorAxis_m;
+  const endRadius_m = destinationOrbitModel.semiMajorAxis_m;
+  if (!(startRadius_m > 0) || !(endRadius_m > 0)) return null;
+  if (!(barycenterMu_m3s2 > 0) || !Number.isFinite(barycenterMu_m3s2)) return null;
+
+  if (Math.abs(startRadius_m - endRadius_m) <= Math.max(startRadius_m, endRadius_m) * 1e-12) {
+    const separation_deg = 360 - angleBetweenOrbitModels_deg(originOrbitModel, destinationOrbitModel, launchTime_s);
+    const lagrangeDuration_s = lagrangeTransferDuration_s(
+      barycenterMu_m3s2,
+      startRadius_m,
+      separation_deg,
+    );
+    if (!Number.isFinite(lagrangeDuration_s) || lagrangeDuration_s <= 0) return null;
+    return lagrangeDuration_s;
+  }
+
+  const baseDuration_s = hohmannDuration_s(startRadius_m, endRadius_m, barycenterMu_m3s2);
+  if (!Number.isFinite(baseDuration_s) || baseDuration_s <= 0) return null;
+  if (!isSunBarycenter) return baseDuration_s;
+
+  const timing = getBestHohmannTiming(
+    originOrbitModel,
+    destinationOrbitModel,
+    launchTime_s,
+    barycenterMu_m3s2,
+    hardCap_s,
+  );
+  if (!(timing.transferDuration_s > 0) || !Number.isFinite(timing.transferDuration_s)) {
+    return baseDuration_s;
+  }
+  if (!(timing.synodicPeriod_s > 0) || !Number.isFinite(timing.synodicPeriod_s)) {
+    return baseDuration_s;
+  }
+
+  let nextHohmannLaunch_s =
+    timing.initialHohmannArrivalTime_s - timing.transferDuration_s;
+  const synodic_s = timing.synodicPeriod_s;
+  if (!Number.isFinite(nextHohmannLaunch_s)) return baseDuration_s;
+
+  while (nextHohmannLaunch_s < launchTime_s) {
+    nextHohmannLaunch_s += synodic_s;
+  }
+
+  const daysToNext = (nextHohmannLaunch_s - launchTime_s) / SECONDS_PER_DAY;
+  const daysToPrevious = (launchTime_s - (nextHohmannLaunch_s - synodic_s)) / SECONDS_PER_DAY;
+  const synodicDays = synodic_s / SECONDS_PER_DAY;
+  if (!(synodicDays > 0) || !Number.isFinite(synodicDays)) {
+    return baseDuration_s;
+  }
+
+  const penaltyFraction = Math.max(0, Math.min(daysToNext, daysToPrevious) / synodicDays);
+  return baseDuration_s * (1 + penaltyFraction);
+}
+
+interface ProbeLineInput {
+  N: number;
+  startTime_s: number;
+  latestAllowedTime_s: number;
+  launchStart_s: number;
+  launchStep_s: number;
+  barycenterMu_m3s2: number;
+  barycenterMeanRadius_m: number;
+  fleetAcceleration_mps2: number;
+  isSunBarycenter: boolean;
+  originOrbitModel: OrbitModel;
+  destinationOrbitModel: OrbitModel;
+  hybridRemap?: HybridRemapInput;
+}
+
+function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
+  const {
+    N,
+    startTime_s,
+    latestAllowedTime_s,
+    launchStart_s,
+    launchStep_s,
+    barycenterMu_m3s2,
+    barycenterMeanRadius_m,
+    fleetAcceleration_mps2,
+    isSunBarycenter,
+    originOrbitModel,
+    destinationOrbitModel,
+    hybridRemap,
+  } = input;
+
+  const series: PorkchopCell[] = [];
+  const failureCounts: Record<number, number> = {};
+  let bestFailure: TITransferResult | null = null;
+  let minDV = Number.POSITIVE_INFINITY;
+  let maxDV = 0;
+  let optimal: PorkchopCell | null = null;
+
+  for (let i = 0; i < N; i++) {
+    const launchTime_s = launchStart_s + i * launchStep_s;
+    const transitDuration_s = probeTransitDuration_s({
+      launchTime_s,
+      hardCap_s: TRANSFER_DURATION_HARD_CAP_S,
+      barycenterMu_m3s2,
+      isSunBarycenter,
+      originOrbitModel,
+      destinationOrbitModel,
+    });
+
+    if (!transitDuration_s || !Number.isFinite(transitDuration_s) || transitDuration_s <= 0) {
+      const fail = buildFailure(TransferOutcome.Fail_CodePathNotImplemented, 0, 0);
+      failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
+      bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
+      continue;
+    }
+
+    const arrivalTime_s = launchTime_s + transitDuration_s;
+    if (arrivalTime_s > latestAllowedTime_s) {
+      const fail = buildFailure(
+        TransferOutcome.Fail_ArrivalBeforeLaunch,
+        arrivalTime_s - latestAllowedTime_s,
+        transitDuration_s,
+      );
+      failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
+      bestFailure = bestTransferResult(bestFailure, fail, fleetAcceleration_mps2);
+      continue;
+    }
+
+    const sourceState_m = originOrbitModel.stateAtTime(launchTime_s);
+    const destinationState_m = destinationOrbitModel.stateAtTime(arrivalTime_s);
+
+    const solution = solveTwoBurnLambertTransfer({
+      launchTime_s,
+      arrivalTime_s,
+      sourceState_m,
+      destinationState_m,
+      barycenterMu_m3s2,
+      barycenterMeanRadius_m,
+      fleetAcceleration_mps2,
+      hybridRemap,
+    });
+
+    let evaluation: TITransferResult = solution.result;
+    if (evaluation.outcome === TransferOutcome.Success) {
+      if (solution.launchTime_s < startTime_s) {
+        evaluation = buildFailure(
+          TransferOutcome.Fail_LaunchInPast,
+          startTime_s - solution.launchTime_s,
+          transitDuration_s,
+        );
+      } else if (
+        solution.transferOrbit &&
+        solution.transferOrbit.eccentricity >= 1
+      ) {
+        evaluation = buildFailure(
+          TransferOutcome.Fail_Hyperbolic,
+          solution.transferOrbit.eccentricity,
+          0,
+        );
+      }
+    }
+
+    if (evaluation.outcome !== TransferOutcome.Success) {
+      failureCounts[evaluation.outcome] = (failureCounts[evaluation.outcome] ?? 0) + 1;
+      bestFailure = bestTransferResult(bestFailure, evaluation, fleetAcceleration_mps2);
+      continue;
+    }
+
+    const cell = toAnchoredPorkchopCell(solution, launchTime_s, arrivalTime_s);
+    series.push(cell);
+
+    if (cell.totalDV < minDV) {
+      minDV = cell.totalDV;
+      optimal = cell;
+    }
+    if (cell.totalDV > maxDV) {
+      maxDV = cell.totalDV;
+    }
+  }
+
+  if (!Number.isFinite(minDV)) minDV = 0;
+
+  const inferredTransitDays = series.length > 1
+    ? Math.max(
+      0,
+      ...series.map((cell) => cell.transitDays),
+    )
+    : series[0]?.transitDays ?? 0;
+
+  return {
+    chartType: "probeLine",
+    probeSeries: series,
+    grid: [],
+    minDV,
+    maxDV,
+    optimal,
+    launchStartDay: launchStart_s / SECONDS_PER_DAY,
+    launchStepDays: launchStep_s / SECONDS_PER_DAY,
+    minTransitDays: inferredTransitDays,
+    transitStepDays: 0,
+    failureCounts,
+    bestFailureOutcome: bestFailure?.outcome ?? null,
+    bestFailureValue: bestFailure?.value ?? 0,
+    bestFailureValue2: bestFailure?.value2 ?? 0,
+  };
 }
 
 export function computePorkchopGrid(
@@ -566,6 +812,23 @@ export function computePorkchopGrid(
     }
     : undefined;
 
+  if (probeMode) {
+    return computeProbeTransferLine({
+      N,
+      startTime_s,
+      latestAllowedTime_s,
+      launchStart_s,
+      launchStep_s,
+      barycenterMu_m3s2,
+      barycenterMeanRadius_m,
+      fleetAcceleration_mps2,
+      isSunBarycenter,
+      originOrbitModel,
+      destinationOrbitModel,
+      hybridRemap,
+    });
+  }
+
   const grid: (PorkchopCell | null)[][] = [];
   let minDV = Number.POSITIVE_INFINITY;
   let maxDV = 0;
@@ -693,6 +956,8 @@ export function computePorkchopGrid(
   }
 
   return {
+    chartType: "porkchop",
+    probeSeries: [],
     grid,
     minDV,
     maxDV,

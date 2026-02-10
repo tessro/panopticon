@@ -287,5 +287,31 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(result.optimal!.transitDays).toBeLessThan(280);
     });
 
+    it("probe mode returns a launch-arrival line instead of a 2D grid", () => {
+      const result = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+          probeMode: true,
+          probeHighThrust: false,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+
+      expect(result.chartType).toBe("probeLine");
+      expect(result.grid.length).toBe(0);
+      expect((result.probeSeries?.length ?? 0)).toBeGreaterThan(0);
+
+      const first = result.probeSeries![0]!;
+      const last = result.probeSeries![result.probeSeries!.length - 1]!;
+      expect(last.launchDay).toBeGreaterThan(first.launchDay);
+      expect(last.arrivalDay).toBeGreaterThan(first.arrivalDay);
+    });
+
   });
 });

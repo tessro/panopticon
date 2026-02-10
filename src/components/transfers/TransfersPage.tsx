@@ -71,9 +71,9 @@ export function TransfersPage() {
           Transfer Planner
         </h2>
         <p className="font-body mt-1 text-xs text-[var(--color-ash)]">
-          Compute transfer windows with the Terra Invicta two-burn Lambert model.
-          Select origin/destination orbits, set ship acceleration and ΔV cap,
-          then generate a porkchop plot.
+          Compute transfer windows with the Terra Invicta transfer logic.
+          Fleet transfers use a two-burn Lambert porkchop sweep, while probe mode
+          uses a launch-to-arrival timeline.
         </p>
       </div>
 
@@ -89,7 +89,7 @@ export function TransfersPage() {
         <div className="flex flex-1 items-center justify-center rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/60 p-2">
           {isComputing ? (
             <div className="font-display text-sm tracking-wider text-[var(--color-ash)] uppercase animate-pulse">
-              Solving Lambert transfers…
+              {probeMode ? "Computing probe timeline…" : "Solving Lambert transfers…"}
             </div>
           ) : result ? (
             <div className="aspect-square w-full">

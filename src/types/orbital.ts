@@ -69,6 +69,8 @@ export interface TransferInputs {
 }
 
 export interface PorkchopResult {
+  chartType?: "porkchop" | "probeLine";
+  probeSeries?: PorkchopCell[];
   grid: (PorkchopCell | null)[][];
   minDV: number;
   maxDV: number;

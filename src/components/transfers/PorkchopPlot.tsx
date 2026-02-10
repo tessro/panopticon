@@ -36,6 +36,210 @@ function dayToDate(day: number): Date {
   return new Date(day * 86400000);
 }
 
+function ProbeLineContent({
+  result,
+  width,
+  height,
+}: {
+  result: PorkchopResult;
+  width: number;
+  height: number;
+}) {
+  const [hoveredCell, setHoveredCell] = useState<PorkchopCell | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const availableWidth = width - MARGIN.left - MARGIN.right;
+  const availableHeight = height - MARGIN.top - MARGIN.bottom;
+  const plotSize = Math.min(availableWidth, availableHeight);
+  const plotOffsetX = MARGIN.left + Math.max(0, (availableWidth - plotSize) / 2);
+  const plotOffsetY = MARGIN.top + Math.max(0, (availableHeight - plotSize) / 2);
+
+  const points = useMemo(
+    () =>
+      (result.probeSeries ?? [])
+        .slice()
+        .sort((a, b) => a.launchDay - b.launchDay),
+    [result.probeSeries],
+  );
+  const optimal = result.optimal;
+
+  const ranges = useMemo(() => {
+    if (points.length === 0) return null;
+    const firstPoint = points.at(0);
+    const lastPoint = points.at(-1);
+    if (!firstPoint || !lastPoint) return null;
+    const minLaunch = firstPoint.launchDay;
+    const maxLaunch = lastPoint.launchDay;
+    const minArrival = Math.min(...points.map((p) => p.arrivalDay));
+    const maxArrival = Math.max(...points.map((p) => p.arrivalDay));
+    const launchPad =
+      Math.max((maxLaunch - minLaunch) / 40, result.launchStepDays > 0 ? result.launchStepDays : 1);
+    const arrivalPad = Math.max((maxArrival - minArrival) / 40, 1);
+
+    return {
+      launchMin: minLaunch - launchPad,
+      launchMax: maxLaunch + launchPad,
+      arrivalMin: minArrival - arrivalPad,
+      arrivalMax: maxArrival + arrivalPad,
+    };
+  }, [points, result.launchStepDays]);
+
+  const xScale = useMemo(
+    () =>
+      scaleUtc({
+        domain: [dayToDate(ranges?.launchMin ?? 0), dayToDate(ranges?.launchMax ?? 1)],
+        range: [0, plotSize],
+      }),
+    [ranges, plotSize],
+  );
+
+  const yScale = useMemo(
+    () =>
+      scaleUtc({
+        domain: [dayToDate(ranges?.arrivalMin ?? 0), dayToDate(ranges?.arrivalMax ?? 1)],
+        range: [plotSize, 0],
+      }),
+    [ranges, plotSize],
+  );
+
+  const linePoints = useMemo(
+    () =>
+      points
+        .map((point) => `${xScale(dayToDate(point.launchDay))},${yScale(dayToDate(point.arrivalDay))}`)
+        .join(" "),
+    [points, xScale, yScale],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<SVGCircleElement>, cell: PorkchopCell) => {
+      setHoveredCell(cell);
+      setMousePos({ x: e.clientX, y: e.clientY });
+    },
+    [],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredCell(null);
+  }, []);
+
+  if (!ranges || plotSize <= 0 || points.length === 0) {
+    const failure = transferOutcomeLabel(result.bestFailureOutcome);
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <span className="font-display block text-sm text-[var(--color-steel)]">
+            No valid transfers found
+          </span>
+          {failure && (
+            <span className="font-body mt-1 block text-xs text-[var(--color-ash)]">
+              Most likely failure: {failure}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full">
+      <svg width={width} height={height}>
+        <Group left={plotOffsetX} top={plotOffsetY}>
+          <polyline
+            points={linePoints}
+            fill="none"
+            stroke="var(--color-cyan)"
+            strokeWidth={2}
+            opacity={0.9}
+          />
+
+          {points.map((point) => (
+            <circle
+              key={`${point.launchDay}-${point.arrivalDay}`}
+              cx={xScale(dayToDate(point.launchDay))}
+              cy={yScale(dayToDate(point.arrivalDay))}
+              r={3}
+              fill="var(--color-fog)"
+              stroke="var(--color-cyan-dim)"
+              strokeWidth={1}
+              onMouseMove={(e) => handleMouseMove(e, point)}
+              onMouseLeave={handleMouseLeave}
+            />
+          ))}
+
+          {optimal && (
+            <circle
+              cx={xScale(dayToDate(optimal.launchDay))}
+              cy={yScale(dayToDate(optimal.arrivalDay))}
+              r={6}
+              fill="none"
+              stroke="var(--color-cyan)"
+              strokeWidth={2}
+            />
+          )}
+
+          <AxisBottom
+            top={plotSize}
+            scale={xScale}
+            numTicks={6}
+            tickLabelProps={{
+              fill: "var(--color-ash)",
+              fontSize: 10,
+              fontFamily: "var(--font-mono)",
+              textAnchor: "middle",
+            }}
+            stroke="var(--color-slate)"
+            tickStroke="var(--color-steel)"
+            label="Launch Date"
+            labelProps={{
+              fill: "var(--color-fog)",
+              fontSize: 11,
+              fontFamily: "var(--font-display)",
+              textAnchor: "middle",
+              letterSpacing: "0.05em",
+            }}
+          />
+          <AxisLeft
+            scale={yScale}
+            numTicks={6}
+            labelOffset={Y_AXIS_LABEL_OFFSET_PX}
+            tickLabelProps={{
+              fill: "var(--color-ash)",
+              fontSize: 10,
+              fontFamily: "var(--font-mono)",
+              textAnchor: "end",
+            }}
+            stroke="var(--color-slate)"
+            tickStroke="var(--color-steel)"
+            label="Arrival Date"
+            labelProps={{
+              fill: "var(--color-fog)",
+              fontSize: 11,
+              fontFamily: "var(--font-display)",
+              textAnchor: "middle",
+              letterSpacing: "0.05em",
+            }}
+          />
+        </Group>
+      </svg>
+
+      <div className="absolute right-6 top-6 flex items-center gap-2 rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/80 px-2 py-1">
+        <span className="font-display text-[10px] tracking-wide text-[var(--color-ash)] uppercase">
+          Probe Transfer Line
+        </span>
+      </div>
+
+      {hoveredCell && (
+        <div
+          className="pointer-events-none fixed z-50"
+          style={{ left: mousePos.x + 12, top: mousePos.y - 12 }}
+        >
+          <PorkchopTooltip cell={hoveredCell} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlotContent({
   result,
   width,
@@ -302,7 +506,11 @@ export function PorkchopPlot({ result }: PorkchopPlotProps) {
     <ParentSize className="h-full w-full">
       {({ width, height }) =>
         width > 0 && height > 0 ? (
-          <PlotContent result={result} width={width} height={height} />
+          result.chartType === "probeLine" ? (
+            <ProbeLineContent result={result} width={width} height={height} />
+          ) : (
+            <PlotContent result={result} width={width} height={height} />
+          )
         ) : null
       }
     </ParentSize>

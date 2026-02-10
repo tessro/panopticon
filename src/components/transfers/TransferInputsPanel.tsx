@@ -171,14 +171,14 @@ export function TransferInputsPanel({
             Probe Mode
           </span>
           <span className="font-body text-[10px] text-[var(--color-steel)]">
-            Uses Earth launch assumptions and uncapped transfer dV.
+            Uses Earth launch assumptions, uncapped transfer dV, and a fixed probe timeline.
           </span>
         </div>
       </label>
 
       {probeMode && (
         <p className="font-body text-[10px] text-[var(--color-steel)]">
-          Probe mode always launches from Low Earth Orbit 1 and ignores the Max ΔV cap.
+          Probe mode always launches from Low Earth Orbit 1, ignores the Max ΔV cap, and plots a launch-to-arrival line.
         </p>
       )}
 
