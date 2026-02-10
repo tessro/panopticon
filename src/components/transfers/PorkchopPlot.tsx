@@ -117,15 +117,28 @@ function PlotContent({
   );
 
   // Color scale: map dV to color using d3-scale-chromatic turbo
-  const dvToColor = useMemo(() => {
+  const { dvToColor, legendGradient } = useMemo(() => {
     // Use log scale for better visual separation
     const logMin = Math.log(Math.max(minDV, 0.1));
     const logMax = Math.log(Math.max(maxDV, minDV + 1));
     const range = logMax - logMin || 1;
 
-    return (dv: number) => {
+    const colorForDV = (dv: number) => {
       const t = (Math.log(Math.max(dv, 0.1)) - logMin) / range;
       return interpolateTurbo(Math.max(0, Math.min(1, t)));
+    };
+
+    const stopCount = 16;
+    const stops: string[] = [];
+    for (let i = 0; i <= stopCount; i++) {
+      const t = i / stopCount;
+      const dv = Math.exp(logMin + t * range);
+      stops.push(`${colorForDV(dv)} ${(t * 100).toFixed(1)}%`);
+    }
+
+    return {
+      dvToColor: colorForDV,
+      legendGradient: `linear-gradient(to right, ${stops.join(", ")})`,
     };
   }, [minDV, maxDV]);
 
@@ -263,7 +276,7 @@ function PlotContent({
         <div
           className="h-3 w-24 rounded-sm"
           style={{
-            background: `linear-gradient(to right, ${dvToColor(minDV)}, ${dvToColor((minDV + maxDV) / 2)}, ${dvToColor(maxDV)})`,
+            background: legendGradient,
           }}
         />
         <span className="font-mono text-[10px] text-[var(--color-ash)]">
