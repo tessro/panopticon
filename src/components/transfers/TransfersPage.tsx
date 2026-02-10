@@ -14,6 +14,7 @@ export function TransfersPage() {
   const destOrbit = useAppStore((s) => s.transferDestinationOrbit);
   const gameDate = useAppStore((s) => s.transferGameDate);
   const gridResolution = useAppStore((s) => s.transferGridResolution);
+  const departureHorizonYears = useAppStore((s) => s.transferDepartureHorizonYears);
   const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
   const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
   const probeMode = useAppStore((s) => s.transferProbeMode);
@@ -27,6 +28,7 @@ export function TransfersPage() {
       destinationOrbit: destOrbit,
       gameDate,
       gridResolution,
+      departureHorizonYears,
       launchAcceleration_mg: launchAcceleration,
       maxDeltaV_kms: maxDeltaV,
       probeMode,
@@ -37,6 +39,7 @@ export function TransfersPage() {
     destOrbit,
     gameDate,
     gridResolution,
+    departureHorizonYears,
     launchAcceleration,
     maxDeltaV,
     probeMode,

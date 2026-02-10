@@ -36,6 +36,8 @@ export function TransferInputsPanel({
   const setDestOrbit = useAppStore((s) => s.setTransferDestinationOrbit);
   const gridResolution = useAppStore((s) => s.transferGridResolution);
   const setGridResolution = useAppStore((s) => s.setTransferGridResolution);
+  const departureHorizonYears = useAppStore((s) => s.transferDepartureHorizonYears);
+  const setDepartureHorizonYears = useAppStore((s) => s.setTransferDepartureHorizonYears);
   const launchAcceleration = useAppStore((s) => s.transferLaunchAcceleration);
   const setLaunchAcceleration = useAppStore((s) => s.setTransferLaunchAcceleration);
   const maxDeltaV = useAppStore((s) => s.transferMaxDeltaV);
@@ -116,12 +118,34 @@ export function TransferInputsPanel({
 
       <div>
         <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
+          Departure Horizon (Years)
+        </Label>
+        <input
+          type="number"
+          min={0}
+          max={5}
+          step={0.1}
+          value={departureHorizonYears}
+          onChange={(e) => {
+            const next = Number.parseFloat(e.target.value);
+            if (!Number.isNaN(next)) {
+              setDepartureHorizonYears(next);
+            }
+          }}
+          className="w-full rounded border border-[var(--color-slate)] bg-[var(--color-deep)] px-3 py-1.5 font-mono text-xs text-[var(--color-fog)] outline-none focus:border-[var(--color-cyan-dim)]"
+        />
+        <p className="mt-1 font-body text-[10px] text-[var(--color-steel)]">
+          Controls how far out departure dates are scanned (max 5 years).
+        </p>
+      </div>
+
+      <div>
+        <Label className="font-display mb-1 block text-xs tracking-wide text-[var(--color-ash)] uppercase">
           Cruise Accel (mG)
         </Label>
         <input
           type="number"
           min={0}
-          max={100000}
           step={1}
           value={launchAcceleration}
           disabled={probeMode}
@@ -144,8 +168,7 @@ export function TransferInputsPanel({
         </Label>
         <input
           type="number"
-          min={0.1}
-          max={500}
+          min={0}
           step={0.5}
           value={maxDeltaV}
           disabled={probeMode}

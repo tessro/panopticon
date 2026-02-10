@@ -4,9 +4,9 @@ import { persist } from "zustand/middleware";
 const GRID_RESOLUTION_MIN = 20;
 const GRID_RESOLUTION_MAX = 300;
 const LAUNCH_ACCELERATION_MG_MIN = 0;
-const LAUNCH_ACCELERATION_MG_MAX = 100000;
-const MAX_DELTA_V_MIN = 0.1;
-const MAX_DELTA_V_MAX = 500;
+const MAX_DELTA_V_MIN = 0;
+const DEPARTURE_HORIZON_YEARS_MIN = 0;
+const DEPARTURE_HORIZON_YEARS_MAX = 5;
 
 function isValidDateInput(value: string): boolean {
   return Number.isFinite(Date.parse(`${value}T00:00:00Z`));
@@ -20,15 +20,20 @@ function clampGridResolution(value: number): number {
 
 function clampLaunchAcceleration(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.max(
-    LAUNCH_ACCELERATION_MG_MIN,
-    Math.min(LAUNCH_ACCELERATION_MG_MAX, value),
-  );
+  return Math.max(LAUNCH_ACCELERATION_MG_MIN, value);
 }
 
 function clampMaxDeltaV(value: number): number {
   if (!Number.isFinite(value)) return 50;
-  return Math.max(MAX_DELTA_V_MIN, Math.min(MAX_DELTA_V_MAX, value));
+  return Math.max(MAX_DELTA_V_MIN, value);
+}
+
+function clampDepartureHorizonYears(value: number): number {
+  if (!Number.isFinite(value)) return 2.5;
+  return Math.max(
+    DEPARTURE_HORIZON_YEARS_MIN,
+    Math.min(DEPARTURE_HORIZON_YEARS_MAX, value),
+  );
 }
 
 interface AppState {
@@ -54,6 +59,8 @@ interface AppState {
   setTransferLaunchAcceleration: (acceleration: number) => void;
   transferMaxDeltaV: number;
   setTransferMaxDeltaV: (deltaV: number) => void;
+  transferDepartureHorizonYears: number;
+  setTransferDepartureHorizonYears: (years: number) => void;
   transferProbeMode: boolean;
   setTransferProbeMode: (enabled: boolean) => void;
   transferProbeHighThrust: boolean;
@@ -94,6 +101,9 @@ export const useAppStore = create<AppState>()(
       transferMaxDeltaV: 50,
       setTransferMaxDeltaV: (deltaV) =>
         set({ transferMaxDeltaV: clampMaxDeltaV(deltaV) }),
+      transferDepartureHorizonYears: 2.5,
+      setTransferDepartureHorizonYears: (years) =>
+        set({ transferDepartureHorizonYears: clampDepartureHorizonYears(years) }),
       transferProbeMode: false,
       setTransferProbeMode: (enabled) => set({ transferProbeMode: enabled }),
       transferProbeHighThrust: false,

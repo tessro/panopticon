@@ -36,6 +36,8 @@ const SECONDS_PER_DAY = 86_400;
 const SECONDS_PER_YEAR = DAYS_PER_YEAR * SECONDS_PER_DAY;
 const TWO_PI = 2 * Math.PI;
 const TRANSFER_DURATION_HARD_CAP_S = 78_892_310;
+const MAX_DEPARTURE_HORIZON_YEARS = 5;
+const DEFAULT_DEPARTURE_HORIZON_YEARS = TRANSFER_DURATION_HARD_CAP_S / SECONDS_PER_YEAR;
 const J2000_UNIX_S = J2000_DATE.getTime() / 1000;
 const HYBRID_REMAP_WINDOW_S = 12 * SECONDS_PER_DAY;
 const HYBRID_REMAP_SAMPLES = 48;
@@ -514,7 +516,8 @@ function probeTransitDuration_s(input: ProbeTransitDurationInput): number | null
 interface ProbeLineInput {
   N: number;
   startTime_s: number;
-  latestAllowedTime_s: number;
+  latestLaunchAllowedTime_s: number;
+  latestArrivalAllowedTime_s: number;
   launchStart_s: number;
   launchStep_s: number;
   barycenterMu_m3s2: number;
@@ -530,7 +533,8 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
   const {
     N,
     startTime_s,
-    latestAllowedTime_s,
+    latestLaunchAllowedTime_s,
+    latestArrivalAllowedTime_s,
     launchStart_s,
     launchStep_s,
     barycenterMu_m3s2,
@@ -568,10 +572,13 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
     }
 
     const arrivalTime_s = launchTime_s + transitDuration_s;
-    if (arrivalTime_s > latestAllowedTime_s) {
+    if (launchTime_s > latestLaunchAllowedTime_s || arrivalTime_s > latestArrivalAllowedTime_s) {
       const fail = buildFailure(
         TransferOutcome.Fail_ArrivalBeforeLaunch,
-        arrivalTime_s - latestAllowedTime_s,
+        Math.max(
+          arrivalTime_s - latestArrivalAllowedTime_s,
+          launchTime_s - latestLaunchAllowedTime_s,
+        ),
         transitDuration_s,
       );
       failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
@@ -725,7 +732,11 @@ export function computePorkchopGrid(
   const startDate = new Date(startDateValue);
   const startJY = dateToJY(startDate);
   const startTime_s = startDateValue / 1000;
-  const latestAllowedTime_s = startTime_s + TRANSFER_DURATION_HARD_CAP_S;
+  const departureHorizonYears = Number.isFinite(inputs.departureHorizonYears)
+    ? Math.max(0, Math.min(MAX_DEPARTURE_HORIZON_YEARS, inputs.departureHorizonYears ?? 0))
+    : DEFAULT_DEPARTURE_HORIZON_YEARS;
+  const latestLaunchAllowedTime_s = startTime_s + departureHorizonYears * SECONDS_PER_YEAR;
+  const latestArrivalAllowedTime_s = latestLaunchAllowedTime_s + TRANSFER_DURATION_HARD_CAP_S;
 
   const originOrbitModel = useLocalCircularModel
     ? buildLocalCircularOrbitModel(originRadius_m, barycenterMu_m3s2, startTime_s)
@@ -759,7 +770,7 @@ export function computePorkchopGrid(
   const launchAnchors_s = [
     initialHohmannLaunch_s,
     ...additionalHohmannWindows.map((window) => window.launchTime_s),
-  ].filter((t_s) => Number.isFinite(t_s) && t_s >= startTime_s && t_s <= latestAllowedTime_s);
+  ].filter((t_s) => Number.isFinite(t_s) && t_s >= startTime_s && t_s <= latestLaunchAllowedTime_s);
   if (launchAnchors_s.length === 0) {
     launchAnchors_s.push(startTime_s);
   }
@@ -778,7 +789,7 @@ export function computePorkchopGrid(
     // both before and after the computed window.
     const halfSpan = fallbackLaunchSpan_s / 2;
     launchStart_s = Math.max(startTime_s, launchStart_s - halfSpan);
-    launchEnd_s = Math.min(latestAllowedTime_s, launchStart_s + fallbackLaunchSpan_s);
+    launchEnd_s = Math.min(latestLaunchAllowedTime_s, launchStart_s + fallbackLaunchSpan_s);
   }
   if (!(launchEnd_s > launchStart_s)) {
     launchEnd_s = launchStart_s + SECONDS_PER_DAY;
@@ -816,7 +827,8 @@ export function computePorkchopGrid(
     return computeProbeTransferLine({
       N,
       startTime_s,
-      latestAllowedTime_s,
+      latestLaunchAllowedTime_s,
+      latestArrivalAllowedTime_s,
       launchStart_s,
       launchStep_s,
       barycenterMu_m3s2,
@@ -919,7 +931,7 @@ export function computePorkchopGrid(
     const refLaunchHalf_s = launchStep_s;
     const refTransitHalf_s = transitStep_s;
     const refLaunchStart_s = Math.max(startTime_s, refLaunchCenter_s - refLaunchHalf_s);
-    const refLaunchEnd_s = Math.min(latestAllowedTime_s, refLaunchCenter_s + refLaunchHalf_s);
+    const refLaunchEnd_s = Math.min(latestLaunchAllowedTime_s, refLaunchCenter_s + refLaunchHalf_s);
     const refTransitMin_s = Math.max(transitMinFloor_s, refTransitCenter_s - refTransitHalf_s);
     const refTransitMax_s = Math.min(TRANSFER_DURATION_HARD_CAP_S, refTransitCenter_s + refTransitHalf_s);
     const refLaunchStep_s = (refLaunchEnd_s - refLaunchStart_s) / (refineN - 1);

@@ -60,6 +60,8 @@ export interface TransferInputs {
   destinationOrbit: string;
   gameDate: string;
   gridResolution: number;
+  /** How far from gameDate to scan departure dates (years, clamped 0..5) */
+  departureHorizonYears?: number;
   launchAcceleration_mg: number;
   maxDeltaV_kms: number;
   /** Probe-mode transfer assumptions (launched from Earth, uncapped dV) */
