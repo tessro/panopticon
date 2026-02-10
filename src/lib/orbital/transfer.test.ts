@@ -217,52 +217,25 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
     });
   });
 
-  describe("heliocentric Lambert dV vs in-game values", () => {
-    // The game uses an impulse-microthrust hybrid model. Our pure heliocentric
-    // Lambert gives ~2 km/s higher dV because we don't model the microthrust
-    // spirals that save SOI escape/capture cost.
-    for (const sol of GAME_SOLUTIONS.earlyWindow) {
-      it(`early-window: heliocentric dV is ~2 km/s above game's ${sol.dV_kps} km/s (launch ${sol.launch.slice(0, 10)})`, () => {
-        const result = solveLambertAtDates(sol.launch, sol.arrival);
-        expect(result.result.outcome).toBe(TransferOutcome.Success);
-        const heliocentricDV = result.totalDV_mps / 1000;
-        // Heliocentric should be consistently higher than game by ~1.7–2.0 km/s
-        const offset = heliocentricDV - sol.dV_kps;
-        expect(offset).toBeGreaterThan(1.0);
-        expect(offset).toBeLessThan(3.0);
-      });
-    }
+  describe("game dV parity panel", () => {
+    const GAME_DV_TOLERANCE_KPS = 0.1;
+    const panel = [
+      ...GAME_SOLUTIONS.earlyWindow.map((sol) => ({ panel: "earlyWindow", ...sol })),
+      ...GAME_SOLUTIONS.midWindow.map((sol) => ({ panel: "midWindow", ...sol })),
+      ...GAME_SOLUTIONS.optimal.map((sol) => ({ panel: "optimal", ...sol })),
+    ];
 
-    // Mid-window transfers: the heliocentric/game offset shrinks as dV
-    // decreases, crossing zero near the optimal. The offset tracks the
-    // v_inf-dependent Oberth savings the game's hybrid model captures.
-    // Offset ≈ +0.9 at 14 km/s, +0.4 at 12 km/s, −0.1 at 8 km/s.
-    for (const sol of GAME_SOLUTIONS.midWindow) {
-      it(`mid-window: heliocentric ≈ game's ${sol.dV_kps} km/s (launch ${sol.launch.slice(0, 10)})`, () => {
+    it.each(panel)(
+      "$panel launch $launch -> dV matches game value $dV_kps kps (+/- 0.1)",
+      (sol) => {
         const result = solveLambertAtDates(sol.launch, sol.arrival);
         expect(result.result.outcome).toBe(TransferOutcome.Success);
-        const heliocentricDV = result.totalDV_mps / 1000;
-        const offset = heliocentricDV - sol.dV_kps;
-        // Offset should be between −0.2 and +1.0 for this dV range
-        expect(offset).toBeGreaterThan(-0.2);
-        expect(offset).toBeLessThan(1.0);
-      });
-    }
 
-    // For the game's optimal dates, the launch/arrival timestamps include
-    // microthrust spiral time (~46d total), so the actual Lambert transit is
-    // ~250d instead of the ~296d implied by the game dates. Evaluating Lambert
-    // at the game's outer dates gives ~15 km/s because the transfer crosses
-    // the 180° geometry spike. This is expected behavior, not a solver bug.
-    for (const sol of GAME_SOLUTIONS.optimal) {
-      it(`optimal: game dates include spiral time, Lambert at outer dates gives high dV (launch ${sol.launch.slice(0, 10)})`, () => {
-        const result = solveLambertAtDates(sol.launch, sol.arrival);
-        expect(result.result.outcome).toBe(TransferOutcome.Success);
-        // Lambert at the game's outer dates gives ~15 km/s due to the
-        // 180° geometry spike — NOT the game's 6 km/s hybrid result
-        expect(result.totalDV_mps / 1000).toBeGreaterThan(10);
-      });
-    }
+        const computedDV_kps = result.totalDV_mps / 1000;
+        const delta_kps = Math.abs(computedDV_kps - sol.dV_kps);
+        expect(delta_kps).toBeLessThanOrEqual(GAME_DV_TOLERANCE_KPS);
+      },
+    );
   });
 
   describe("porkchop grid integration", () => {
