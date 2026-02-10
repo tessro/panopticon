@@ -72,13 +72,15 @@ export function TransfersPage() {
           result={result}
         />
 
-        <div className="flex h-[600px] flex-1 items-center justify-center rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/60">
+        <div className="flex flex-1 items-center justify-center rounded border border-[var(--color-slate)] bg-[var(--color-abyss)]/60 p-2">
           {isComputing ? (
             <div className="font-display text-sm tracking-wider text-[var(--color-ash)] uppercase animate-pulse">
               Solving Lambert transfers…
             </div>
           ) : result ? (
-            <PorkchopPlot result={result} />
+            <div className="aspect-square w-full">
+              <PorkchopPlot result={result} />
+            </div>
           ) : (
             <div className="font-display text-sm tracking-wider text-[var(--color-steel)] uppercase">
               Select orbits and compute to see the porkchop plot

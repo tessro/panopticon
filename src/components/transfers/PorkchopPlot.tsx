@@ -11,7 +11,8 @@ interface PorkchopPlotProps {
   result: PorkchopResult;
 }
 
-const MARGIN = { top: 20, right: 20, bottom: 60, left: 80 };
+const MARGIN = { top: 20, right: 20, bottom: 60, left: 96 };
+const Y_AXIS_LABEL_OFFSET_PX = 52;
 
 function transferOutcomeLabel(outcome: number | null | undefined): string | null {
   if (outcome == null) return null;
@@ -233,6 +234,7 @@ function PlotContent({
           <AxisLeft
             scale={yScale}
             numTicks={6}
+            labelOffset={Y_AXIS_LABEL_OFFSET_PX}
             tickLabelProps={{
               fill: "var(--color-ash)",
               fontSize: 10,
