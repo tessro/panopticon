@@ -129,9 +129,7 @@ export function tryGetMinimumAccelerationNeeded(
       return fleetAcceleration_mps2 * (result.value / result.value2);
     }
     case TransferOutcome.Fail_LaunchInPast: {
-      const denominator = 1 - result.value / result.value2;
-      if (denominator === 0) return null;
-      return fleetAcceleration_mps2 / denominator;
+      return fleetAcceleration_mps2 / (1 - result.value / result.value2);
     }
     case TransferOutcome.Fail_BurnLongerThanHalfOrbit: {
       return fleetAcceleration_mps2 * ((2 * result.value) / result.value2);
@@ -322,7 +320,7 @@ function chooseLambert(
   if (!prograde && !retrograde) return { primary: null, secondary: null };
   if (prograde && !retrograde) return { primary: prograde, secondary: null };
   if (!prograde && retrograde) return { primary: retrograde, secondary: null };
-  if ((prograde?.totalDV ?? Number.POSITIVE_INFINITY) <= (retrograde?.totalDV ?? Number.POSITIVE_INFINITY)) {
+  if ((prograde?.totalDV ?? Number.POSITIVE_INFINITY) < (retrograde?.totalDV ?? Number.POSITIVE_INFINITY)) {
     return { primary: prograde, secondary: retrograde };
   }
   return { primary: retrograde, secondary: prograde };
@@ -420,6 +418,7 @@ export function solveTwoBurnLambertTransfer(
     };
   }
 
+  const firstAttemptPeriapsis_m = transferOrbit.periapsis_m;
   let collides = wouldCollideWithBarycenter(
     transferOrbit,
     input.launchTime_s,
@@ -485,7 +484,7 @@ export function solveTwoBurnLambertTransfer(
     return {
       result: makeResult(
         TransferOutcome.Fail_WouldCollideWithBody,
-        Math.max(transferOrbit.periapsis_m, input.barycenterMeanRadius_m),
+        Math.max(firstAttemptPeriapsis_m, transferOrbit.periapsis_m),
         input.barycenterMeanRadius_m,
       ),
       launchTime_s: input.launchTime_s,
