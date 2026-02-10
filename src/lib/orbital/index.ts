@@ -8,6 +8,8 @@ export {
   tryGetMinimumDVneeded_mps,
   tryGetMinimumAccelerationNeeded,
   cartesianToOrbitalElements,
+  solveTorchTransfer,
+  solvePureLambertTransfer,
   solveTwoBurnLambertTransfer,
   transferSolutionToCell,
 } from "./transfer";

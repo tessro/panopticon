@@ -82,8 +82,18 @@ function vecScale(v: Vec3, s: number): Vec3 {
   return { x: v.x * s, y: v.y * s, z: v.z * s };
 }
 
+function vecAdd(a: Vec3, b: Vec3): Vec3 {
+  return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+}
+
 function vecSub(a: Vec3, b: Vec3): Vec3 {
   return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+}
+
+function vecNormalize(v: Vec3): Vec3 {
+  const m = vecMag(v);
+  if (m <= 0) return { x: 0, y: 0, z: 0 };
+  return vecScale(v, 1 / m);
 }
 
 function normalizeAngleRad(theta: number): number {
@@ -326,7 +336,7 @@ function chooseLambert(
   return { primary: retrograde, secondary: prograde };
 }
 
-export function solveTwoBurnLambertTransfer(
+export function solvePureLambertTransfer(
   input: TwoBurnTransferInput,
 ): TwoBurnTransferSolution {
   const transitDuration_s = input.arrivalTime_s - input.launchTime_s;
@@ -570,6 +580,361 @@ export function solveTwoBurnLambertTransfer(
     decelBurnTime_s,
     transferOrbit,
   };
+}
+
+function emptySolution(
+  input: TwoBurnTransferInput,
+  result: TITransferResult,
+): TwoBurnTransferSolution {
+  const transitDuration_s = input.arrivalTime_s - input.launchTime_s;
+  return {
+    result,
+    launchTime_s: input.launchTime_s,
+    arrivalTime_s: input.arrivalTime_s,
+    transitDuration_s,
+    boostDV_mps: 0,
+    decelDV_mps: 0,
+    totalDV_mps: 0,
+    boostBurnTime_s: 0,
+    decelBurnTime_s: 0,
+    transferOrbit: null,
+  };
+}
+
+function f32(n: number): number {
+  return Math.fround(n);
+}
+
+function solveLinear4(
+  matrix: readonly [
+    number, number, number, number,
+    number, number, number, number,
+    number, number, number, number,
+    number, number, number, number,
+  ],
+  rhs: readonly [number, number, number, number],
+): [number, number, number, number] | null {
+  const a = [
+    [matrix[0], matrix[1], matrix[2], matrix[3], rhs[0]],
+    [matrix[4], matrix[5], matrix[6], matrix[7], rhs[1]],
+    [matrix[8], matrix[9], matrix[10], matrix[11], rhs[2]],
+    [matrix[12], matrix[13], matrix[14], matrix[15], rhs[3]],
+  ];
+
+  for (let col = 0; col < 4; col++) {
+    let pivotRow = col;
+    let maxAbs = Math.abs(a[col]![col]!);
+    for (let row = col + 1; row < 4; row++) {
+      const candidate = Math.abs(a[row]![col]!);
+      if (candidate > maxAbs) {
+        maxAbs = candidate;
+        pivotRow = row;
+      }
+    }
+    if (!Number.isFinite(maxAbs) || maxAbs <= 1e-20) {
+      return null;
+    }
+    if (pivotRow !== col) {
+      const tmp = a[col]!;
+      a[col] = a[pivotRow]!;
+      a[pivotRow] = tmp;
+    }
+
+    const pivot = a[col]![col]!;
+    for (let c = col; c <= 4; c++) {
+      a[col]![c] = a[col]![c]! / pivot;
+    }
+
+    for (let row = 0; row < 4; row++) {
+      if (row === col) continue;
+      const factor = a[row]![col]!;
+      if (factor === 0) continue;
+      for (let c = col; c <= 4; c++) {
+        a[row]![c] = a[row]![c]! - factor * a[col]![c]!;
+      }
+    }
+  }
+
+  return [a[0]![4]!, a[1]![4]!, a[2]![4]!, a[3]![4]!];
+}
+
+export function solveTorchTransfer(input: TwoBurnTransferInput): TwoBurnTransferSolution {
+  const transitDuration_s = input.arrivalTime_s - input.launchTime_s;
+  if (transitDuration_s <= 0) {
+    return emptySolution(
+      input,
+      makeResult(TransferOutcome.Fail_ArrivalBeforeLaunch, transitDuration_s, 0),
+    );
+  }
+
+  if (!Number.isFinite(input.fleetAcceleration_mps2) || input.fleetAcceleration_mps2 <= 0) {
+    return emptySolution(
+      input,
+      makeResult(TransferOutcome.Fail_InsufficientAcceleration, 0, 0),
+    );
+  }
+
+  const avgVelocity = vecScale(vecAdd(input.sourceState_m.vel, input.destinationState_m.vel), 0.5);
+  const movingInitial = {
+    pos: input.sourceState_m.pos,
+    vel: vecSub(input.sourceState_m.vel, avgVelocity),
+  };
+  const movingFinal = {
+    pos: vecSub(input.destinationState_m.pos, vecScale(avgVelocity, transitDuration_s)),
+    vel: vecSub(input.destinationState_m.vel, avgVelocity),
+  };
+
+  const deltaPos = vecSub(movingFinal.pos, movingInitial.pos);
+  const transferDirection = vecNormalize(deltaPos);
+  const transferDistance = f32(vecMag(deltaPos));
+
+  const velocityAlong = f32(vecDot(movingInitial.vel, transferDirection));
+  const velocityAlongVector = vecScale(transferDirection, velocityAlong);
+  const velocityPerpVector = vecSub(movingInitial.vel, velocityAlongVector);
+  const velocityPerpMag = f32(vecMag(velocityPerpVector));
+  const velocityPerpDir = vecNormalize(velocityPerpVector);
+
+  const accel = f32(input.fleetAcceleration_mps2);
+  const invAccel = f32(1 / accel);
+  const transit = f32(transitDuration_s);
+
+  let u = 0;
+  let v = f32(-velocityPerpMag);
+  let w = 0;
+  let z = f32(-velocityPerpMag);
+
+  const seed = f32(velocityAlong - f32(f32(0.5) * transit * accel));
+  let hasFallback = false;
+
+  const discriminantPrimary = f32(
+    f32(seed * seed)
+      + f32(velocityAlong * transit * accel)
+      - f32(f32(2) * velocityAlong * velocityAlong)
+      - f32(transferDistance * accel),
+  );
+  if (discriminantPrimary >= 0) {
+    u = f32(f32(f32(0.5) * transit * accel) - f32(Math.sqrt(discriminantPrimary)));
+    hasFallback = true;
+  } else {
+    const aTerm = f32(f32(accel * transit) + f32(2 * velocityAlong));
+    const discriminantSecondary = f32(
+      f32(aTerm * aTerm)
+        - f32(f32(4) * accel * velocityAlong * transit)
+        - f32(f32(8) * velocityAlong * velocityAlong)
+        + f32(f32(4) * accel * transferDistance),
+    );
+    if (discriminantSecondary >= 0) {
+      u = f32(-0.5 * f32(aTerm + f32(Math.sqrt(discriminantSecondary))));
+      hasFallback = true;
+    } else {
+      u = f32(-velocityAlong);
+      hasFallback = false;
+    }
+  }
+
+  w = f32(f32(-2 * velocityAlong) - u);
+
+  const fallbackU = u;
+  const fallbackV = v;
+  const fallbackW = w;
+  const fallbackZ = z;
+
+  const maxIterations = 20;
+  const tolerance = f32(1e-11);
+  let firstError = Number.POSITIVE_INFINITY;
+  let currentError = Number.POSITIVE_INFINITY;
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const r1Sq = f32(f32(u * u) + f32(v * v));
+    const r1 = f32(Math.sqrt(r1Sq));
+    const r2Sq = f32(f32(w * w) + f32(z * z));
+    const r2 = f32(Math.sqrt(r2Sq));
+
+    const eq0 = f32(f32(v + z) + f32(2 * velocityPerpMag));
+    const eq1 = f32(f32(u + w) + f32(2 * velocityAlong));
+    const eq2 = f32(
+      f32(velocityPerpMag * transit)
+        + f32(v * f32(transit - f32(f32(0.5) * r1 * invAccel)))
+        + f32(f32(0.5) * z * r2 * invAccel),
+    );
+    const eq3 = f32(
+      f32(velocityAlong * transit)
+        + f32(u * f32(transit - f32(f32(0.5) * r1 * invAccel)))
+        + f32(f32(0.5) * w * r2 * invAccel)
+        - transferDistance,
+    );
+
+    const previousError = currentError;
+    currentError = f32(
+      f32(eq0 * eq0)
+        + f32(eq1 * eq1)
+        + f32(eq2 * eq2)
+        + f32(eq3 * eq3),
+    );
+
+    if (iter === 0) firstError = currentError;
+
+    if (currentError < tolerance) break;
+    if (
+      previousError === currentError
+      || Number.isNaN(currentError)
+      || !Number.isFinite(currentError)
+    ) {
+      break;
+    }
+
+    const denom1 = f32(f32(2) * accel * r1);
+    const denom2 = f32(f32(2) * accel * r2);
+
+    const col0 = [
+      f32(0),
+      f32(1),
+      f32((-u * v) / denom1),
+      f32(transit - f32(f32(2 * u * u) + f32(v * v)) / denom1),
+    ] as const;
+    const col1 = [
+      f32(1),
+      f32(0),
+      f32(transit - r1Sq / denom1),
+      f32((-u * v) / denom1),
+    ] as const;
+    const col2 = [
+      f32(0),
+      f32(1),
+      f32((w * z) / denom2),
+      f32(f32(f32(2 * w * w) + f32(z * z)) / denom2),
+    ] as const;
+    const col3 = [
+      f32(1),
+      f32(0),
+      f32(f32(f32(w * w) + f32(2 * z * z)) / denom2),
+      f32((w * z) / denom2),
+    ] as const;
+
+    const matrix = [
+      col0[0], col1[0], col2[0], col3[0],
+      col0[1], col1[1], col2[1], col3[1],
+      col0[2], col1[2], col2[2], col3[2],
+      col0[3], col1[3], col2[3], col3[3],
+    ] as const;
+    const delta = solveLinear4(matrix, [eq0, eq1, eq2, eq3]);
+    if (!delta) {
+      currentError = Number.POSITIVE_INFINITY;
+      break;
+    }
+
+    u = f32(u - delta[0]);
+    v = f32(v - delta[1]);
+    w = f32(w - delta[2]);
+    z = f32(z - delta[3]);
+  }
+
+  if (
+    currentError > firstError
+    || !Number.isFinite(currentError)
+    || Number.isNaN(currentError)
+  ) {
+    if (!hasFallback) {
+      return emptySolution(input, makeResult(TransferOutcome.Fail_CodePathNotImplemented));
+    }
+    u = fallbackU;
+    v = fallbackV;
+    w = fallbackW;
+    z = fallbackZ;
+  }
+
+  const boostBurn = vecAdd(
+    vecScale(transferDirection, u),
+    vecScale(velocityPerpDir, v),
+  );
+  const decelBurn = vecAdd(
+    vecScale(transferDirection, w),
+    vecScale(velocityPerpDir, z),
+  );
+
+  const boostDV_mps = vecMag(boostBurn);
+  const decelDV_mps = vecMag(decelBurn);
+  const totalDV_mps = boostDV_mps + decelDV_mps;
+
+  const boostBurnTime_s = boostDV_mps / input.fleetAcceleration_mps2;
+  const decelBurnTime_s = decelDV_mps / input.fleetAcceleration_mps2;
+
+  if (!Number.isFinite(boostBurnTime_s) || !Number.isFinite(decelBurnTime_s)) {
+    return {
+      ...emptySolution(input, makeResult(TransferOutcome.Fail_CodePathNotImplemented)),
+      boostDV_mps,
+      decelDV_mps,
+      totalDV_mps,
+      boostBurnTime_s,
+      decelBurnTime_s,
+    };
+  }
+
+  if (boostBurnTime_s + decelBurnTime_s > transitDuration_s) {
+    return {
+      ...emptySolution(
+        input,
+        makeResult(
+          TransferOutcome.Fail_BurnLongerThanTransfer,
+          boostBurnTime_s + decelBurnTime_s,
+          transitDuration_s,
+        ),
+      ),
+      boostDV_mps,
+      decelDV_mps,
+      totalDV_mps,
+      boostBurnTime_s,
+      decelBurnTime_s,
+    };
+  }
+
+  return {
+    result: makeResult(TransferOutcome.Success),
+    launchTime_s: input.launchTime_s,
+    arrivalTime_s: input.arrivalTime_s,
+    transitDuration_s,
+    boostDV_mps,
+    decelDV_mps,
+    totalDV_mps,
+    boostBurnTime_s,
+    decelBurnTime_s,
+    transferOrbit: null,
+  };
+}
+
+function isSuccess(solution: TwoBurnTransferSolution): boolean {
+  return solution.result.outcome === TransferOutcome.Success;
+}
+
+function bestSolution(
+  lambert: TwoBurnTransferSolution,
+  torch: TwoBurnTransferSolution,
+  fleetAcceleration_mps2: number,
+): TwoBurnTransferSolution {
+  const lambertSuccess = isSuccess(lambert);
+  const torchSuccess = isSuccess(torch);
+
+  if (lambertSuccess && torchSuccess) {
+    return lambert.totalDV_mps <= torch.totalDV_mps ? lambert : torch;
+  }
+  if (lambertSuccess) return lambert;
+  if (torchSuccess) return torch;
+
+  const bestResult = bestTransferResult(
+    lambert.result,
+    torch.result,
+    fleetAcceleration_mps2,
+  );
+  if (bestResult === lambert.result) return lambert;
+  return torch;
+}
+
+export function solveTwoBurnLambertTransfer(
+  input: TwoBurnTransferInput,
+): TwoBurnTransferSolution {
+  const lambert = solvePureLambertTransfer(input);
+  const torch = solveTorchTransfer(input);
+  return bestSolution(lambert, torch, input.fleetAcceleration_mps2);
 }
 
 export function transferSolutionToCell(solution: TwoBurnTransferSolution): PorkchopCell {
