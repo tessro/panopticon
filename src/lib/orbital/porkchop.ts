@@ -23,6 +23,8 @@ import {
   bestTransferResult,
   solveTwoBurnLambertTransfer,
   transferSolutionToCell,
+  type HybridRemapInput,
+  type TwoBurnTransferSolution,
   type TITransferResult,
 } from "./transfer";
 
@@ -35,6 +37,9 @@ const SECONDS_PER_YEAR = DAYS_PER_YEAR * SECONDS_PER_DAY;
 const TWO_PI = 2 * Math.PI;
 const TRANSFER_DURATION_HARD_CAP_S = 78_892_310;
 const J2000_UNIX_S = J2000_DATE.getTime() / 1000;
+const HYBRID_REMAP_WINDOW_S = 12 * SECONDS_PER_DAY;
+const HYBRID_REMAP_SAMPLES = 48;
+const HYBRID_REMAP_ITERATIONS = 2;
 
 function emptyResult(): PorkchopResult {
   return {
@@ -67,6 +72,19 @@ function vecApproxEqual(a: Vec3, b: Vec3): boolean {
     Math.abs(a.y - b.y) <= 1e-12 &&
     Math.abs(a.z - b.z) <= 1e-12
   );
+}
+
+function toAnchoredPorkchopCell(
+  solution: TwoBurnTransferSolution,
+  launchTime_s: number,
+  arrivalTime_s: number,
+): PorkchopCell {
+  return transferSolutionToCell({
+    ...solution,
+    launchTime_s,
+    arrivalTime_s,
+    transitDuration_s: arrivalTime_s - launchTime_s,
+  });
 }
 
 function normalizeAngleRad(theta: number): number {
@@ -517,6 +535,15 @@ export function computePorkchopGrid(
     maxTransit_s = minTransit_s + transitStepFloor_s;
   }
   const transitStep_s = N > 1 ? (maxTransit_s - minTransit_s) / (N - 1) : 0;
+  const hybridRemap: HybridRemapInput | undefined = isSunBarycenter
+    ? {
+      sourceStateAtTime: originOrbitModel.stateAtTime,
+      destinationStateAtTime: destinationOrbitModel.stateAtTime,
+      remapWindow_s: HYBRID_REMAP_WINDOW_S,
+      remapSamples: HYBRID_REMAP_SAMPLES,
+      remapIterations: HYBRID_REMAP_ITERATIONS,
+    }
+    : undefined;
 
   const grid: (PorkchopCell | null)[][] = [];
   let minDV = Number.POSITIVE_INFINITY;
@@ -545,6 +572,7 @@ export function computePorkchopGrid(
         barycenterMu_m3s2,
         barycenterMeanRadius_m,
         fleetAcceleration_mps2,
+        hybridRemap,
       });
 
       let evaluation: TITransferResult = solution.result;
@@ -581,7 +609,7 @@ export function computePorkchopGrid(
         continue;
       }
 
-      const cell = transferSolutionToCell(solution);
+      const cell = toAnchoredPorkchopCell(solution, launchTime_s, arrivalTime_s);
       row.push(cell);
 
       if (cell.totalDV < minDV) {
@@ -628,12 +656,13 @@ export function computePorkchopGrid(
           barycenterMu_m3s2,
           barycenterMeanRadius_m,
           fleetAcceleration_mps2,
+          hybridRemap,
         });
         if (sol.result.outcome !== TransferOutcome.Success) continue;
         if (sol.launchTime_s < startTime_s) continue;
         if (sol.totalDV_mps / 1000 > dvCap_kms) continue;
         if (sol.transferOrbit && sol.transferOrbit.eccentricity >= 1) continue;
-        const cell = transferSolutionToCell(sol);
+        const cell = toAnchoredPorkchopCell(sol, lt, at);
         if (cell.totalDV < minDV) {
           minDV = cell.totalDV;
           optimal = cell;
