@@ -307,8 +307,7 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(result.chartType).toBe("probeLine");
       expect(result.grid.length).toBe(0);
       expect((result.probeSeries?.length ?? 0)).toBeGreaterThan(0);
-      expect("probeSeriesHighThrust" in result).toBe(false);
-      expect("optimalHighThrust" in result).toBe(false);
+      expect((result.probeSeriesHighThrust?.length ?? 0)).toBeGreaterThan(0);
 
       const first = result.probeSeries![0]!;
       const last = result.probeSeries![result.probeSeries!.length - 1]!;
@@ -373,6 +372,31 @@ describe("Earth → Mars transfer (LEO1 → LMO, 3000mg, 25 kps)", () => {
       expect(shortSpanDays).toBeLessThan(190);
       expect(longSpanDays).toBeGreaterThan(1800);
       expect(longSpanDays).toBeLessThan(1900);
+    });
+
+    it("high-thrust probe transit is half the default transit", () => {
+      const result = computePorkchopGrid(
+        {
+          originOrbit: "LowEarthOrbit1",
+          destinationOrbit: "LowMarsOrbit",
+          gameDate: "2028-01-01",
+          gridResolution: 50,
+          departureHorizonYears: 2,
+          launchAcceleration_mg: ACCELERATION_MG,
+          maxDeltaV_kms: MAX_DV_KMS,
+          probeMode: true,
+        },
+        [EARTH, MARS],
+        [LEO1, LMO],
+      );
+
+      expect(result.optimal).not.toBeNull();
+      expect(result.optimalHighThrust).not.toBeNull();
+      // High-thrust is exactly 2x speed → half the transit time
+      expect(result.optimalHighThrust!.transitDays).toBeCloseTo(
+        result.optimal!.transitDays * 0.5,
+        0,
+      );
     });
 
   });

@@ -278,8 +278,16 @@ export function TransferInputsPanel({
       {result?.optimal && (
         <OptimalTransferCard
           cell={result.optimal}
-          label="Optimal Transfer"
+          label={probeMode ? "Optimal (Default)" : "Optimal Transfer"}
           accentColor="var(--color-cyan)"
+        />
+      )}
+
+      {probeMode && result?.optimalHighThrust && (
+        <OptimalTransferCard
+          cell={result.optimalHighThrust}
+          label="Optimal (High Thrust)"
+          accentColor="#f59e0b"
         />
       )}
     </div>

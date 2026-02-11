@@ -49,10 +49,12 @@ function emptyResult(): PorkchopResult {
   return {
     chartType: "porkchop",
     probeSeries: [],
+    probeSeriesHighThrust: [],
     grid: [],
     minDV: 0,
     maxDV: 0,
     optimal: null,
+    optimalHighThrust: null,
     launchStartDay: 0,
     launchStepDays: 0,
     minTransitDays: 0,
@@ -565,6 +567,7 @@ interface ProbeLineInput {
   latestArrivalAllowedTime_s: number;
   launchStart_s: number;
   launchStep_s: number;
+  transitScale: number;
   barycenterMu_m3s2: number;
   isSunBarycenter: boolean;
   originOrbitModel: OrbitModel;
@@ -578,6 +581,7 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
     latestArrivalAllowedTime_s,
     launchStart_s,
     launchStep_s,
+    transitScale,
     barycenterMu_m3s2,
     isSunBarycenter,
     originOrbitModel,
@@ -593,7 +597,7 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
 
   for (let i = 0; i < N; i++) {
     const launchTime_s = launchStart_s + i * launchStep_s;
-    const transitDuration_s = probeTransitDuration_s({
+    const rawTransitDuration_s = probeTransitDuration_s({
       launchTime_s,
       hardCap_s: TRANSFER_DURATION_HARD_CAP_S,
       barycenterMu_m3s2,
@@ -602,13 +606,14 @@ function computeProbeTransferLine(input: ProbeLineInput): PorkchopResult {
       destinationOrbitModel,
     });
 
-    if (!transitDuration_s || !Number.isFinite(transitDuration_s) || transitDuration_s <= 0) {
+    if (!rawTransitDuration_s || !Number.isFinite(rawTransitDuration_s) || rawTransitDuration_s <= 0) {
       const fail = buildFailure(TransferOutcome.Fail_CodePathNotImplemented, 0, 0);
       failureCounts[fail.outcome] = (failureCounts[fail.outcome] ?? 0) + 1;
       bestFailure = bestTransferResult(bestFailure, fail, 0);
       continue;
     }
 
+    const transitDuration_s = rawTransitDuration_s * transitScale;
     const arrivalTime_s = launchTime_s + transitDuration_s;
     if (launchTime_s > latestLaunchAllowedTime_s || arrivalTime_s > latestArrivalAllowedTime_s) {
       const fail = buildFailure(
@@ -844,7 +849,7 @@ export function computePorkchopGrid(
     : undefined;
 
   if (probeMode) {
-    return computeProbeTransferLine({
+    const commonProbeInput = {
       N,
       latestLaunchAllowedTime_s,
       latestArrivalAllowedTime_s,
@@ -854,7 +859,25 @@ export function computePorkchopGrid(
       isSunBarycenter,
       originOrbitModel,
       destinationOrbitModel,
+    };
+
+    const defaultResult = computeProbeTransferLine({
+      ...commonProbeInput,
+      transitScale: 1,
     });
+
+    const highThrustResult = computeProbeTransferLine({
+      ...commonProbeInput,
+      transitScale: 0.5,
+    });
+
+    return {
+      ...defaultResult,
+      probeSeriesHighThrust: highThrustResult.probeSeries,
+      optimalHighThrust: highThrustResult.optimal,
+      minDV: Math.min(defaultResult.minDV, highThrustResult.minDV),
+      maxDV: Math.max(defaultResult.maxDV, highThrustResult.maxDV),
+    };
   }
 
   const grid: (PorkchopCell | null)[][] = [];
